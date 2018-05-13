@@ -118,9 +118,9 @@ Discarded input sections
  .text._Z9stopDrivev
                 0x00000000       0xea main.o
  .text._Z4movxii
-                0x00000000      0x290 main.o
+                0x00000000      0x282 main.o
  .text._Z4movyii
-                0x00000000      0x28e main.o
+                0x00000000      0x280 main.o
  .text._Z14updateZoneflagv
                 0x00000000      0x104 main.o
  .text._Z18gorockthegamefieldv

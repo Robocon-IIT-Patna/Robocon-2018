@@ -314,7 +314,7 @@ void initializeData()
 	compass.SETPOINT = 18;
 	ltX.SETPOINT = 35;
 	ltY.SETPOINT = 35;
-	compass.setPid(3,0.185,113);
+	compass.setPid(3,0.1,177);//3,0.185,113);
 	ltX.setPid(4.0,0.003,488);
 	ltY.setPid(4.0,0.003,488);
 	driveX.setPid(0.3,0.0002,5);		//0.3,0.0000004,46
@@ -355,13 +355,15 @@ void movx(int distance_setpoint, int direction){
 		else{
 				velocity_robot[0] = 40 + 0.6*distanceX;
 		}
+		
+		if(direction == Front){
+			velocity_robot[0] = velocity_robot[0];
+		}
+		else if(direction == Back){
+			velocity_robot[0] = -abs(velocity_robot[0]);
+		}
 	}
-	if(direction == Front){
-		velocity_robot[0] = velocity_robot[0];
-	}
-	else if(direction == Back){
-		velocity_robot[0] = -abs(velocity_robot[0]);
-	}
+	
 	velocity_robot[1] = 0;
 	calculateCompassPID();
 	calculatevel();
@@ -397,13 +399,15 @@ void movy(int distance_setpoint, int direction){
 		else{
 			velocity_robot[1] = 60 + (distanceY*0.65);
 		}
+		
+		if(direction == Front){
+			velocity_robot[1] = velocity_robot[1];
+		}
+		else if(direction == Back){
+			velocity_robot[1] = -abs(velocity_robot[1]);
+		}
 	}
-	if(direction == Front){
-		velocity_robot[1] = velocity_robot[1];
-	}
-	else if(direction == Back){
-		velocity_robot[1] = -abs(velocity_robot[1]);
-	}
+	
 	velocity_robot[0] = 0;
 	velocity_robot[2] = 0;
 	calculatevel();

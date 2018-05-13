@@ -1242,18 +1242,18 @@ Linetracker::Linetracker(int addr) // 0 to 255
      8b6:	5e 8b       	std	Y+22, r21	; 0x16
      8b8:	6f 8b       	std	Y+23, r22	; 0x17
      8ba:	78 8f       	std	Y+24, r23	; 0x18
-     8bc:	44 ea       	ldi	r20, 0xA4	; 164
-     8be:	50 e7       	ldi	r21, 0x70	; 112
-     8c0:	6d e3       	ldi	r22, 0x3D	; 61
-     8c2:	7e e3       	ldi	r23, 0x3E	; 62
+     8bc:	4d ec       	ldi	r20, 0xCD	; 205
+     8be:	5c ec       	ldi	r21, 0xCC	; 204
+     8c0:	6c ec       	ldi	r22, 0xCC	; 204
+     8c2:	7d e3       	ldi	r23, 0x3D	; 61
      8c4:	49 8f       	std	Y+25, r20	; 0x19
      8c6:	5a 8f       	std	Y+26, r21	; 0x1a
      8c8:	6b 8f       	std	Y+27, r22	; 0x1b
      8ca:	7c 8f       	std	Y+28, r23	; 0x1c
      8cc:	40 e0       	ldi	r20, 0x00	; 0
      8ce:	50 e0       	ldi	r21, 0x00	; 0
-     8d0:	62 ee       	ldi	r22, 0xE2	; 226
-     8d2:	72 e4       	ldi	r23, 0x42	; 66
+     8d0:	61 e3       	ldi	r22, 0x31	; 49
+     8d2:	73 e4       	ldi	r23, 0x43	; 67
      8d4:	4d 8f       	std	Y+29, r20	; 0x1d
      8d6:	5e 8f       	std	Y+30, r21	; 0x1e
      8d8:	6f 8f       	std	Y+31, r22	; 0x1f
