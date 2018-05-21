@@ -10,9 +10,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-
-//#include "UART9bit.h"
-#include "uart.h"
+#include "Parallel_9bit.h"
 #include "Compass.h"
 #include <util/delay.h>
 Compass C1;
@@ -20,15 +18,13 @@ Compass C1;
 int main(void)
 {	
 	sei();
-	uart0_init(UART_BAUD_SELECT(9600,F_CPU));
-	//UART_Initialize_9bit();
 	C1.init_compass();
+	init_communication();
     /* Replace with your application code */
     while (1) 
     {
 		C1.read_Compass();
-		uart0_putc(uint8_t(C1.Get_Angle()/2));
-		//UART_Transmit_9bit(257);
-		_delay_ms(15);
+		Send_data(C1.Get_Angle());
+		_delay_ms(10);
     }
 }
