@@ -344,7 +344,7 @@ void initializeAll()
 	
 }
 
-void movx(int distance_setpoint, int direction){
+void movx(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t minSpeed_u8){
 	//compass.setPid(2.1,0.04,32);
 	distanceX = abs(encoderX.getdistance());
 	driveX.SETPOINT = distance_setpoint;
@@ -374,13 +374,13 @@ void movx(int distance_setpoint, int direction){
 			}
 			driveX.prevInput = driveX.input;
 			//////////////////////////////////////////////////////
-			if(abs(driveX.output) > 150){
-				if(driveX.output >0)	driveX.output = 150;
-				else						driveX.output = -150;
+			if(abs(driveX.output) > maxSpeed_u8){
+				if(driveX.output >0)	driveX.output =maxSpeed_u8;	//150
+				else						driveX.output = -maxSpeed_u8;	//150
 			}
- 			if(abs(driveX.output) < 30){
- 				if(driveX.output >= 0)	driveX.output = 30;
- 				else					driveX.output = -30;
+ 			if(abs(driveX.output) < minSpeed_u8){
+ 				if(driveX.output >= 0)	driveX.output = minSpeed_u8;  //30
+ 				else					driveX.output = -minSpeed_u8;	//30
  			}
 			//////////////////////////////////////////////////////
 			velocity_robot[0] = driveX.output;
@@ -401,7 +401,8 @@ void movx(int distance_setpoint, int direction){
 	calculateCompassPID();
 }
 
-void movy(int distance_setpoint, int direction){
+void movy(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t minSpeed_u8)
+{
 	//compass.setPid(2.1,0.04,32);
 	distanceY = abs(encoderY.getdistance());
 	driveY.SETPOINT = distance_setpoint;
@@ -429,13 +430,13 @@ void movy(int distance_setpoint, int direction){
 				}
 				driveY.prevInput = driveY.input;
 				////////////////////////////////////////////////////////////
-				if(abs(driveY.output) >= 100){
-					if(driveY.output >100)	driveY.output = 100;
-					else						driveY.output = -100;
+				if(abs(driveY.output) >= maxSpeed_u8){
+					if(driveY.output > 0)	driveY.output = maxSpeed_u8;	// 100
+					else						driveY.output = -maxSpeed_u8;
 				}
- 				if(abs(driveY.output) < 20){
- 					if(driveY.output >= 0)	driveY.output = 20;
- 					else					driveY.output = -20;
+ 				if(abs(driveY.output) < minSpeed_u8){
+ 					if(driveY.output >= 0)	driveY.output = minSpeed_u8;	//20
+ 					else					driveY.output = -minSpeed_u8;
  				}
 				/////////////////////////////////////////////////////////
 				velocity_robot[1] = driveY.output;

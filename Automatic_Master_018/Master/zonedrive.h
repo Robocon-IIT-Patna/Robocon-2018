@@ -75,7 +75,17 @@ struct coordinates{
 const struct coordinates Throwingzone1 = {4600,1880};	//4700 -x 1900 -y
 const struct coordinates Throwingzone2 = {6600,1880};
 const struct coordinates Throwingzone3 = {6500,3760};
-
+//////////////////////////////////////////////////////////
+#define SZ_LZ1_CORNER_MAX	150
+#define SZ_LZ1_CORNER_MIN	20
+#define LZ1_TZ1_MAX	100
+#define LZ1_TZ1_MIN	20
+#define LZ1_LZ2_MAX	100
+#define LZ1_LZ2_MIN	20
+#define LZ2_TZ2_MAX	100
+#define LZ2_TZ2_MIN	20
+#define LZ2_TZ3_MAX	150
+#define LZ2_TZ3_MIN	20
 /////////////////////////////////////////
 /*these are state and position of robot in start zone*/
 volatile unsigned int where = inStart_point;
@@ -176,7 +186,7 @@ void gorockthegamefield(void)
 	////move from start zone to corner of loading zone
 	if(!task1 && where == inStart_point){	
 		compass.setPid(2,0,31);
-		movx(Throwingzone1.x,Front);
+		movx(Throwingzone1.x,Front,SZ_LZ1_CORNER_MAX,SZ_LZ1_CORNER_MIN);
 		robotState = moving;
 		//uart0_puts("going ahead \t");
 		if(abs(encoderX.getdistance()) >= 4530){
@@ -214,7 +224,7 @@ void gorockthegamefield(void)
 			if(GoThrowingZone1 && !task3 && where == inLZ1){
 				robotState = moving;
 				compass.setPid(2,0,31);
-				movy(Throwingzone1.y,Front);
+				movy(Throwingzone1.y,Front,LZ1_TZ1_MAX,LZ1_TZ1_MIN);
 				//uart0_puts("going tz1\t");
 				if(abs(encoderY.getdistance()) >= 1600){
 					linetrackerYjunctionWatch();
@@ -257,7 +267,7 @@ void gorockthegamefield(void)
 			if(backtoLZ1 && task3 && !task4){
 				compass.setPid(2,0,31);
 				//uart0_puts("Returning from tz1 \t");
-				movy(Throwingzone1.y, Back);
+				movy(Throwingzone1.y, Back,LZ1_TZ1_MAX,LZ1_TZ1_MIN);
 				robotState = moving;
 				if(abs(encoderY.getdistance()) >= 1200){
 					linetrackerYjunctionWatch();
@@ -285,7 +295,7 @@ void gorockthegamefield(void)
 			else if(gotoLZ2 && !task5){
 				//uart0_puts("heading loading zone 2\t");
 				compass.setPid(2,0,31);
-				movx(2000,Front);
+				movx(2000,Front,LZ1_LZ2_MAX,LZ1_LZ2_MIN);
 				robotState = moving;
 				if(abs(encoderX.getdistance()) >= 1900){
 					//uart0_puts("interrupt on");
@@ -317,7 +327,7 @@ void gorockthegamefield(void)
 				//uart0_puts("going tz2 \t");
 				compass.setPid(2,0,31);
 				robotState = moving;
-				movy(Throwingzone2.y, Front);
+				movy(Throwingzone2.y, Front,LZ2_TZ2_MAX,LZ2_TZ2_MIN);
 			
 				if(abs(encoderY.getdistance()) >=1200){
 				//uart0_puts("interrupt on");
@@ -362,7 +372,7 @@ void gorockthegamefield(void)
 			if(backtoLZ2 && task6 && !task7){
 				//uart0_puts("returning to loading zone 2 \t");
 				compass.setPid(2,0,31);
-				movy(Throwingzone2.y,Back);
+				movy(Throwingzone2.y,Back,LZ2_TZ2_MAX,LZ2_TZ2_MIN);
 				robotState = moving;
 			
 				if(abs(encoderY.getdistance()) >= 1200){
@@ -394,7 +404,7 @@ void gorockthegamefield(void)
 			if(GoThrowingZone3 && !task8){
 				compass.setPid(2,0,31);
 				//uart0_puts("going tz3 \t");
-				movy(5100,Front);
+				movy(5100,Front,LZ2_TZ3_MAX,LZ2_TZ3_MIN);
 				robotState = moving;
 				if(abs(encoderY.getdistance()) >= 4000){
 					linetrackerYjunctionWatch();	
@@ -439,7 +449,7 @@ void gorockthegamefield(void)
 			if(backtoLZ2 && task8 && !task9){
 				//uart0_puts("back to lz2\t");
 				compass.setPid(2,0,31);
-				movy(5100,Back);
+				movy(5100,Back,LZ2_TZ3_MAX,LZ2_TZ3_MIN);
 				robotState = moving;
 				if(abs(encoderY.getdistance()) >= 4000){
 					//uart0_puts("interrupt on");
