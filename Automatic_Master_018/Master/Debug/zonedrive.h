@@ -238,13 +238,12 @@ void gorockthegamefield(void)
 			/* if in throwing zone 1 and robot is notmoving then hold this position and wait till throwing
 			   mechanism acknowledges throwing*/
 			if(where == inTZ1 && robotState == notmoving){
-				//uart3_puts("Throwing \r\n");
+				uart0_puts("Throwing \r\n");
 				holdposition();
 
-				if(_b_Transmit_once && Stable_Robot())	//Stable_Robot() && 
+				if(_b_Transmit_once)	//Stable_Robot() && 
 				{	
 					uart3_putc('1');
-					//uart3_puts("Job Done\r\n\n");
 					_b_Transmit_once = false;
 				}
 				
@@ -347,7 +346,7 @@ void gorockthegamefield(void)
 				uart0_puts("throwing \r\n");
 				holdposition();
 
-				if( _b_Transmit_once && Stable_Robot())  // Stable_Robot() 
+				if( _b_Transmit_once)  // Stable_Robot() 
 				{	
 					uart3_putc('2');
 					_b_Transmit_once = false;
@@ -422,7 +421,33 @@ void gorockthegamefield(void)
 			   mechanism acknowledges throwing*/
 			else if(task8 && where == inTZ3 && robotState == notmoving){
 				
-				if(_b_Transmit_once && Stable_Robot())	//Stable_Robot() && 
+				encoderX.resetCount();
+				uint16_t distx1 = 0,distx2 = 0,distx3 = 0,distx4 = 0,distx5 = 0;
+				while (!FlagDistance)
+				{
+					distx5 = distx4;
+					distx4 = distx3;
+					distx3 = distx2;
+					distx2 = distx1;
+					distx1 = encoderX.getdistance();
+					movx(500,Back,20);
+					if (distx1 == distx2 == distx3 == distx4 == distx5)
+					{
+						FlagDistance = true;
+					}
+					
+				}
+				if (FlagDistance)
+				{
+					BrakeMotor();
+				}
+				
+				
+				
+				uart0_puts("holding \r\n");
+				holdposition();	
+
+				if(_b_Transmit_once)	//Stable_Robot() && 
 				{	
 					uart3_putc('3');
 					_b_Transmit_once = false;

@@ -167,13 +167,28 @@
     <Compile Include="Flags.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="General-function.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="gy88.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="headers.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hmccompass.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="qmccompass.h">
+    <Compile Include="MPU6050.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="MPU6050.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="MPU6050_res_define.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="TWI.cpp">

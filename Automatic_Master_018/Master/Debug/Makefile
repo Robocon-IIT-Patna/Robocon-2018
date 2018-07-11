@@ -39,6 +39,7 @@ SUBDIRS :=
 C_SRCS +=  \
 ../encoder.cpp \
 ../main.cpp \
+../MPU6050.cpp \
 ../TWI.cpp \
 ../uart.cpp
 
@@ -52,24 +53,28 @@ ASM_SRCS +=
 OBJS +=  \
 encoder.o \
 main.o \
+MPU6050.o \
 TWI.o \
 uart.o
 
 OBJS_AS_ARGS +=  \
 encoder.o \
 main.o \
+MPU6050.o \
 TWI.o \
 uart.o
 
 C_DEPS +=  \
 encoder.d \
 main.d \
+MPU6050.d \
 TWI.d \
 uart.d
 
 C_DEPS_AS_ARGS +=  \
 encoder.d \
 main.d \
+MPU6050.d \
 TWI.d \
 uart.d
 
@@ -87,6 +92,8 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

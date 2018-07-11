@@ -21,6 +21,7 @@ void i2c_init(void);
 void i2c_stop(void);
 uint8_t i2c_write_array(uint8_t *data, uint8_t count);
 unsigned char i2c_start(unsigned char addr);
+void i2c_start_wait(unsigned char addr);
 unsigned char i2c_rep_start(unsigned char addr);
 unsigned char i2c_write(unsigned char data);
 unsigned char i2c_readAck(void);

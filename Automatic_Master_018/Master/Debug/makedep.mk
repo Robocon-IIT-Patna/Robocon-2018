@@ -6,6 +6,8 @@ encoder.cpp
 
 main.cpp
 
+MPU6050.cpp
+
 TWI.cpp
 
 uart.cpp

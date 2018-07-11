@@ -15,6 +15,7 @@ bool linetrackerPID = true;
 
 bool FlagChangeSetpointCompass = false;
 bool FlagInitialAngleSetpoint = true;
+
 ///////These are updating PID flags////////////
 // volatile bool PidUpdateFlagLinetracker = true;
 //volatile bool PidUpdateFlagCompass = true;

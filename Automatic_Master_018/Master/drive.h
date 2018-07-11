@@ -12,15 +12,25 @@
 #define PI		3.14159265
 #define START_BYTE	127
 
+#define STARTZONEtoCORNER	150
+#define CORNERtoLZ1			40
+#define LZ1toTZ1			100
+#define	TZ1toLZ1			100
+#define LZ1toLZ2			100
+#define LZ2toTZ2			100
+#define	TZ2toLZ2			100
+#define LZ2toTZ3			150
+
 #include "uart.h"
 #include "encoder.h"
 #include "Flags.h"
-#include "qmccompass.h"
+#include "gy88.h"
 #include <util/delay.h>
 #include <math.h>
 
-extern uint8_t change;
 extern encoder encoderY, encoderX;
+
+unsigned long startTime;
 
 ////////////////////////////////////////////////////////////////////////////////
 extern bool PidUpdateFlagCompass;
@@ -42,7 +52,8 @@ uint16_t initialCompassAngle;
 
 
 bool lineMeet = true;
-bool movingx = false;
+bool movingxfront = false;
+bool movingxback = false;
 bool movingyfront = false;
 bool movingyback = false;
 //////////////////////// For Linetracker//////////////////////////////////
@@ -94,8 +105,8 @@ struct bodyPid{
 	inline void dcrki(){ki -= 0.01;}
 	inline void incrkd(){kd += 0.5;}
 	inline void dcrkd(){kd -= 0.5;}
-	inline void incrSetpoint(){SETPOINT += change;}
-	inline void dcrSetpoint(){SETPOINT -= change;}
+	inline void incrSetpoint(){SETPOINT += 2;}
+	inline void dcrSetpoint(){SETPOINT -= 2;}
 	inline int getSETPOINT(){return SETPOINT;}
 	inline float getkp(void){return kp;}
 	inline float getki(void){return ki;}
@@ -105,8 +116,9 @@ struct bodyPid{
 bodyPid ltX,ltY,compass,driveX,driveY;
 
 
-
 /////////////////////////////////////////////////////////
+uint16_t stable_data_count = 0;
+unsigned long millis_time_then = 0;
 bool Stable_Robot(void);
 void calculateCompassPID(void);
 void calculatevel();
@@ -128,14 +140,10 @@ inline void linetrackerYjunctionWatchOff();
 ////////////////////////////////////////////////////
 
 void BrakeMotor(){
-	PORTK ^= (1<<PK1);
+	PORTK ^= (1<<PK0);
 }
 
 void sendDataToSlave(void){
-//	uart0_puts("a");
-// 	I2C_Start(0x20);
-// 	I2C_Write_byte_array(bufferMotorSpeed,4);
-// 	I2C_Stop();
 uart2_putc(START_BYTE);
 //_delay_ms(1);
 uart2_putc(bufferMotorSpeed[0]);
@@ -147,6 +155,8 @@ uart2_putc(bufferMotorSpeed[2]);
 uart2_putc(bufferMotorSpeed[3]);
 /*_delay_ms(1);*/
 }
+
+
 
 int getLineTrackerYdata(void){
 	for(int i = 0; i <= 7; i++){
@@ -174,22 +184,54 @@ inline void linetrackerXjunctionWatch(void){
 inline void linetrackerYjunctionWatch(void){
 	sei();
 	PCICR |= (1<<PCIE2);
-	PCMSK2 |= (1<<PCINT16);
+	PCMSK2 |= (1<<PCINT23);
 }
 inline void linetrackerXjunctionWatchOff(void){
 	PCMSK0 &= ~(1<<PCINT4);
 }
 inline void linetrackerYjunctionWatchOff(void){
-	PCMSK2 &= ~(1<<PCINT16);
+	PCMSK2 &= ~(1<<PCINT23);
 }
 
+bool Stable_Robot(void)
+{
+	uint16_t _get_angle = 0;
+	//uart0_puts
+	//uart0_putint(millis());
+	//uart0_puts("\t");
+	//uart0_putint(millis_time_then);
+	if ((millis() - millis_time_then) > 1)
+	{
+		_get_angle = getYawGY88();
+		//uart3_putint(_get_angle);
+		//uart3_puts("\r\n");
+		if(_get_angle<=(compass.SETPOINT+1) && _get_angle>=(compass.SETPOINT-1))
+		{
+			stable_data_count++;
+			//uart3_putint(stable_data_count);
+			//uart3_putc('\t');
+		}
+		else{
+			stable_data_count = 0;
+		}
+		if (stable_data_count == 100)
+		{
+			//uart3_puts("Stable data \r\n");
+			stable_data_count = 0;
+			return 1;
+		}
+		else return 0;
+		
+		millis_time_then = millis();
+	}
+}
 
 void calculateCompassPID(void)
 {
 	if(PidUpdateFlagCompass && compassPID)
 	{
 		
-		compass.input = get_Angle();
+		compass.input = getYawGY88();
 		
 		
 		compass.error = compass.SETPOINT	-	compass.input;
@@ -205,18 +247,19 @@ void calculateCompassPID(void)
 	
 		compass.Iterm += compass.ki*compass.error;
 
-		if (abs(compass.Iterm) > 0.1*compass.Max_output)
+		if (abs(compass.Iterm) > 0.2*compass.Max_output)
 		{
 			if(compass.Iterm > 0)
-				compass.Iterm = 0.1*compass.Max_output;
+				compass.Iterm = 0.2*compass.Max_output;
 			else
-				compass.Iterm = -0.1*compass.Max_output;
+				compass.Iterm = -0.2*compass.Max_output;
 		}
 		
-		if (abs(compass.error) > 2 )
+		if (abs(compass.error) > 1)
 		{
 			compass.output = compass.kp*compass.error	-	compass.kd*(compass.input-compass.prevInput)	+	compass.Iterm;
 		}
+		
 		else
 		{
 			compass.Iterm = 0;
@@ -224,15 +267,13 @@ void calculateCompassPID(void)
 		}
 			
 		compass.prevInput = compass.input;
-		//uart0_puts("\tprevInput= ");
-		//uart0_putint(compass.prevInput);
 		
 		if (abs(compass.output) > compass.Max_output)
 		{
 			compass.output = (compass.output > compass.Max_output) ?	compass.Max_output : -compass.Max_output;
 		}
 
-		velocity_robot[2] = -compass.output;
+		velocity_robot[2] = compass.output;
 		
 		PidUpdateFlagCompass = false;
 	}
@@ -240,21 +281,6 @@ void calculateCompassPID(void)
 	if(!compassPID){
 		velocity_robot[2] = 0;
 	}
-}
-
-bool Stable_Robot(void)
-{
-	uint16_t _angle = 0;
-	uint16_t _get_angle = 0;
-	for (uint8_t i = 0; i< 100; i++)
-	{
-		_get_angle = get_Angle();
-		if(_get_angle<(compass.SETPOINT+1) && _get_angle>(compass.SETPOINT-1))
-		{ _angle += get_Angle();}
-	}
-	_angle= _angle/100;
-	if (abs(compass.SETPOINT - _angle) <=2) return 1;
-	else return 0;
 }
 
 
@@ -324,33 +350,35 @@ void calculateLineTrackerYPid()
 
 void initializeAll()
 {
+	// 2.1, 0, 12.5 ---> P I D values of compass after compass and linetrackr tune
+	// 0.8, 0, 20   ---> P I D values of lintracker after compass and linetracker tune
 	
-	compass.Set_Max_Min_Output(40,0);	
+	compass.Set_Max_Min_Output(80,0);	
 	
 	ltY.SETPOINT = 45;
-	compass.setPid(2,0,31);//2,0,31);//4,0.09,18);	//5.5, 0, 500 , 2.1,0.04,32
-	ltY.setPid(0.58,0.05,370);//0.58,0.05,370);
+	compass.setPid(2.1,0,12.5);//3.7,0.3,12);//2,0,31);//4,0.09,18);	//5.5, 0, 500 , 2.1,0.04,32
+	ltY.setPid(0.8,0,20);//0.58,0.05,370);
 	driveX.setPid(0.15,0,1.5);		
 	driveY.setPid(0.15,0,1.5);
-	init_QMC5883L();
-	
-	if (compass.FirstData)
-	{
-		initialCompassAngle = get_Angle();
-		compass.FirstData = false;
-		compass.SETPOINT = initialCompassAngle;
-	}
-	
+
+ 	initGY88();
+ 	startTime = millis();
+ 	//uart0_puts("down loop \r\n");
+ 	while((millis() - startTime) < 500){	//take 500 ms to set setpoint of compass
+  		initialCompassAngle = getYawGY88();
+ 		//uart0_puts("1st \r\n");
+  		compass.FirstData = false;
+  		compass.SETPOINT = initialCompassAngle;
+  	}
 	
 }
 
-void movx(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t minSpeed_u8){
+void movx(int distance_setpoint, int direction, unsigned int speed){
 	//compass.setPid(2.1,0.04,32);
 	distanceX = abs(encoderX.getdistance());
 	driveX.SETPOINT = distance_setpoint;
 	if(PidUpdateFlagDriveX)
 	{
-		movingx = true;
 		movingyfront = false;
 		movingyback = false;
 		driveX.input = distanceX;
@@ -374,14 +402,14 @@ void movx(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t min
 			}
 			driveX.prevInput = driveX.input;
 			//////////////////////////////////////////////////////
-			if(abs(driveX.output) > maxSpeed_u8){
-				if(driveX.output >0)	driveX.output =maxSpeed_u8;	//150
-				else						driveX.output = -maxSpeed_u8;	//150
+			if(abs(driveX.output) > speed){
+				if(driveX.output >0)	driveX.output = speed;
+				else						driveX.output = -speed;
 			}
- 			if(abs(driveX.output) < minSpeed_u8){
- 				if(driveX.output >= 0)	driveX.output = minSpeed_u8;  //30
- 				else					driveX.output = -minSpeed_u8;	//30
- 			}
+			if(abs(driveX.output) < 20){
+				if(movingxfront)		driveX.output = 20;
+				else if(movingxback)	driveX.output = -20;
+			}
 			//////////////////////////////////////////////////////
 			velocity_robot[0] = driveX.output;
 		}
@@ -390,9 +418,17 @@ void movx(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t min
 		}
 		if(direction == Front){
 			velocity_robot[0] = velocity_robot[0];
+			movingxfront = true;
+			movingxback = false;
+			movingyback = false;
+			movingyfront = false;
 		}
 		else if(direction == Back){
 			velocity_robot[0] = -abs(velocity_robot[0]);
+			movingxfront = false;
+			movingxback = true;
+			movingyfront = false;
+			movingyback = false;
 		}
 	
 	}
@@ -401,8 +437,7 @@ void movx(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t min
 	calculateCompassPID();
 }
 
-void movy(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t minSpeed_u8)
-{
+void movy(int distance_setpoint, int direction ,unsigned int speed){
 	//compass.setPid(2.1,0.04,32);
 	distanceY = abs(encoderY.getdistance());
 	driveY.SETPOINT = distance_setpoint;
@@ -430,34 +465,33 @@ void movy(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t min
 				}
 				driveY.prevInput = driveY.input;
 				////////////////////////////////////////////////////////////
-				if(abs(driveY.output) >= maxSpeed_u8){
-					if(driveY.output > 0)	driveY.output = maxSpeed_u8;	// 100
-					else						driveY.output = -maxSpeed_u8;
+				if(abs(driveY.output) >= speed){
+					if(movingyfront)		driveY.output = speed;
+					else if(movingyback)	driveY.output = -speed;
 				}
- 				if(abs(driveY.output) < minSpeed_u8){
- 					if(driveY.output >= 0)	driveY.output = minSpeed_u8;	//20
- 					else					driveY.output = -minSpeed_u8;
- 				}
+				if(abs(driveY.output) < 20){
+					if(movingyfront)		driveY.output = 20;
+					else if(movingyback)	driveY.output = -20;
+				}
 				/////////////////////////////////////////////////////////
 				velocity_robot[1] = driveY.output;
 			}
 			else
 			{
-				//uart0_puts("ramp up\t");
-				velocity_robot[1] = 40 + (distanceY*0.3);
-				//uart0_putint(velocity_robot[1]);
-				//uart0_puts("\r\n");
+				velocity_robot[1] = 60 + (distanceY*0.45);
 			}
 			if(direction == Front){
 				movingyfront = true;
 				movingyback = false;
-				movingx = false;
+				movingxfront = false;
+				movingxback = false;
 				velocity_robot[1] = velocity_robot[1];
 			}
 			else if(direction == Back){
 				movingyback = true;
 				movingyfront = false;
-				movingx = false;
+				movingxfront = false;
+				movingxback  = false;
 				velocity_robot[1] = -abs(velocity_robot[1]);
 			}
 		
@@ -468,12 +502,13 @@ void movy(int distance_setpoint, int direction, uint8_t maxSpeed_u8, uint8_t min
 	calculateCompassPID();
 }
 
-void movYForwardSlow(){
-	movingx = false;
+void movYForwardSlow(unsigned int speed){
+	movingxfront = false;
+	movingxback = false;
 	movingyfront = true;
 	movingyback = false;
-	compass.setPid(2,0,31);
-	velocity_robot[1] = 30;
+	//compass.setPid(2.5,0.41,14);
+	velocity_robot[1] = speed;
 	calculateLineTrackerYPid();
 	calculateCompassPID();
 }
@@ -482,7 +517,7 @@ void holdposition(){
 	velocity_robot[0]  = 0;
 	velocity_robot[1] = 0;
 	//velocity_robot[2] = 0;
-	compass.setPid(4.2,0.24,32);	//5.1,0,31
+	compass.setPid(7,0,12);//4.2,0.24,32);	//5.1,0,31
 	calculateCompassPID();
 }
 

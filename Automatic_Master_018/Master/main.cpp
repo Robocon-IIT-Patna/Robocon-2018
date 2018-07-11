@@ -15,23 +15,24 @@
 #include "uart.h"
 #include "encoder.h"
 #include "drive.h"
-#include "qmccompass.h"
 #include "zonedrive.h"
 #include "headers.h"
+#include "gy88.h"
 
 
 ////////////////objects of classes///////////
 encoder encoderX,encoderY;
 ////////////////////////////////////////////
+float roll,pitch,yaw;
 bool junctionY;
 bool junctionX;
 bool FirstData = true;
+bool calibrate = true;
 
 uint16_t compass_Angle = 0;
 uint16_t angle_Max = 0;
 uint16_t angle_Min = 0;
 uint16_t angle_Average = 0;
-
 
 void checkJunctionOfY(){
 	
@@ -43,7 +44,6 @@ void checkJunctionOfY(){
 	}
 	
 }
-
 void checkJunctionOfX(){
 	if(bit_is_set(PINB,PB4)){
 		junctionX = true;
@@ -52,7 +52,6 @@ void checkJunctionOfX(){
 		junctionX = false;
 	}
 }
-
 void changeCompassSetpoint(){
 	if(FlagChangeSetpointCompass)
 	{
@@ -85,7 +84,6 @@ void changeCompassSetpoint(){
 	// 		 uart0_putint(compass_Angle);
 	// 		 uart0_puts("\r\n");
 }
-
 void reactConditionOfLineLeft(){
 	//////////Find the condition when line is left////////
 	
@@ -169,73 +167,77 @@ int main(void)
 	INPUT(RACKPIN);
 	CLEAR(RACKPIN);
 	///SET PK1 AS OUTPUT TO SEND SIGNAL TO SLAVE TO BRAKE MOTOR 
-	DDRK |= (1<<PK1);
-	PORTK &= ~(1<<PK1); 
+	DDRK |= (1<<PK0);
+	PORTK &= ~(1<<PK0); 
 	/// INITIALIZE ALL THE UART
 	uart0_init(UART_BAUD_SELECT(9600,F_CPU));
 	uart2_init(UART_BAUD_SELECT(38400,F_CPU));
-	uart3_init(UART_BAUD_SELECT(9600,F_CPU));
+	uart3_init(UART_BAUD_SELECT(38400,F_CPU));
 	//INITIALIZE EVERYTHING ELSE
- 	initializeAll();
+ 	
+	uart0_puts("starting\r\n");
+	initializeAll();
+	char rcvdata = 'q';
 	sei();
-	char a;
 	
-	//uart0_puts("start \r\n");
+	task1 = task2 = true;
+	where = inLZ1;
+	_b_Transmit_once = true;
     while (1) 
-    {	
-// 		a= uart3_getc();
-// 		if (a=='a')
+    {
+// 		rcvdata = uart0_getc();
+// 		
+// 		if (rcvdata == ' ')
 // 		{
-// 			uart3_puts("\r\n\n");
-// 			uart3_putint(compass.SETPOINT);
-// 			uart3_puts("\t");
-// 			uart3_putint(get_Angle());
-// 			uart3_puts("\r\n\n");
+// 			encoderX.resetCount();
+// 			encoderY.resetCount();
 // 		}
+// 		
+// 		uart0_putint(encoderX.getdistance());
+// 		uart0_putc('\t');
+// 		uart0_putint(encoderY.getdistance());
+// 		uart0_puts("\r\n");
 		
-		checkJunctionOfY();
-		checkJunctionOfX();
-		//get linetracker data
-		lineTrackerData = getLineTrackerYdata();
-		//get compass data
-		compass_Angle = get_Angle();
-		//Change compass setpoint if necessary
-		changeCompassSetpoint();
-		//call the gameplay function
-		gorockthegamefield();
-		//check for line left condition and react to it
-		reactConditionOfLineLeft();
-		//calculate velocity of each motor and send to slave
-		calculatevel();
-		//set previous line tracker data
-		previousLinetrackerData = linetracker_data;
+		//For calibration of compass//////////
+//    		  			if(calibrate){
+//    		 				 velocity_robot[0] = 0;
+//    		 				 velocity_robot[1] = 0;
+//    		 				 velocity_robot[2] = 60;
+//    		 				 calculatevel();
+//    						 
+//    		 				 calibrate_compass();
+//    		 				 calibrate = false;
+//    		 			 }
+//    		 			 else{
+//    		 				 velocity_robot[0] = 0;
+//    		 				 velocity_robot[1] = 0;
+//    		 				 velocity_robot[2] = 0;
+//    		 				 calculatevel();
+//    		 				 uart0_putint(X_offset);
+//    		 				 uart0_puts("\t");
+//    		 				 uart0_putint(Y_offset);
+//    		 				 uart0_puts("\n");
+//    		 			 }	 
 		
-		//uart0_putint(compass_Angle);
-		//uart0_puts("\t");
-		//uart0_putint(compass.SETPOINT);
-		//uart0_puts("\r\n");
-		
-		////////For calibration of compass//////////
-		//  			if(calibrate){
-		// 				 velocity_robot[0] = 0;
-		// 				 velocity_robot[1] = 0;
-		// 				 velocity_robot[2] = 60;
-		// 				 calculatevel();
-		// 				 calibrate_compass();
-		// 				 calibrate = false;
-		// 			 }
-		// 			 else{
-		// 				 velocity_robot[0] = 0;
-		// 				 velocity_robot[1] = 0;
-		// 				 velocity_robot[2] = 0;
-		// 				 calculatevel();
-		// 				 uart0_putint(X_offset);
-		// 				 uart0_puts("\t");
-		// 				 uart0_putint(Y_offset);
-		// 				 uart0_puts("\n");
-		// 			 }
 
- 		
+///////////copy this code and run.//////////////
+//get linetracker data
+lineTrackerData = getLineTrackerYdata();
+//get compass data
+//compass_Angle = get_Angle();
+//Check the junction of Y linetracker
+checkJunctionOfY();
+//call the gameplay function
+//changeCompassSetpoint();
+gorockthegamefield();
+//check for line left condition and react to it
+reactConditionOfLineLeft();
+//calculate velocity of each motor and send to slave
+calculatevel();
+//set previous line tracker data
+previousLinetrackerData = linetracker_data;
+//////not below this line///////////////////////
+// 		
 	}
 }
 
@@ -243,7 +245,7 @@ int main(void)
 ///////////////copy this code and run.//////////////
 ////get linetracker data
 //lineTrackerData = getLineTrackerYdata();
-//get compass data
+////get compass data
 //compass_Angle = get_Angle();
 ////Check the junction of Y linetracker
 //checkJunctionOfY();

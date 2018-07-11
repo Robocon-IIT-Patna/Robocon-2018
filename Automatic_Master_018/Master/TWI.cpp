@@ -68,8 +68,25 @@ unsigned char i2c_start(unsigned char address)
 
 }/* i2c_start */
 
-
-
+void i2c_start_wait(unsigned char addr){
+	uint8_t twst;
+	while(1){
+		TWCR = (1<<TWSTA) | (1<<TWEN) | (1<<TWINT);
+		while(!(TWCR & (1<<TWINT)));
+		twst = TWSR & 0xF8;
+		if(twst != TW_START)
+		continue;
+		TWDR = addr;
+		TWCR = (1<<TWEN)|(1<<TWINT);
+		while(!(TWCR & (1<<TWINT)));
+		twst = TWSR & 0xF8;
+		if(twst != TW_MT_SLA_ACK){
+			i2c_stop();
+			continue;
+		}
+		break;
+	}
+}
 
 
 /*************************************************************************
@@ -125,7 +142,7 @@ unsigned char i2c_write( unsigned char data )
 	// send data to the previously addressed device
 	TWDR = data;
 	TWCR = (1<<TWINT) | (1<<TWEN);
-
+	
 	// wait until transmission completed
 	while(!(TWCR & (1<<TWINT)));
 
