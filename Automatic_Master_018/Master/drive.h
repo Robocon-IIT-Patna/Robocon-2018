@@ -21,6 +21,7 @@
 #define	TZ2toLZ2			100
 #define LZ2toTZ3			150
 
+#include "headers.h"
 #include "uart.h"
 #include "encoder.h"
 #include "Flags.h"
@@ -31,6 +32,13 @@
 extern encoder encoderY, encoderX;
 
 unsigned long startTime;
+
+/*****************************Limit switch pins*************************/
+#define RIGHT_LIMIT_SW F,1
+#define LEFT_LIMIT_SW F,2
+unsigned long time_of_limit_switches_pressed = 0;
+bool first_data_time_of_limit_switches_pressed = true;
+/********************************************************************/
 
 ////////////////////////////////////////////////////////////////////////////////
 extern bool PidUpdateFlagCompass;
@@ -56,6 +64,8 @@ bool movingxfront = false;
 bool movingxback = false;
 bool movingyfront = false;
 bool movingyback = false;
+bool inverseKinematicTrue = true;
+
 //////////////////////// For Linetracker//////////////////////////////////
 static uint8_t linestate = 0;
 static int linetracker_data = 0;
@@ -83,7 +93,7 @@ struct bodyPid{
 	bool leftedgeleft = false;
 	bool rightedgeleft = false;
 	double Iterm;
-	int SETPOINT;	
+	unsigned int SETPOINT;	
 	bool FirstData = true;
 	int Max_output;
 	int Min_output;
@@ -119,18 +129,21 @@ bodyPid ltX,ltY,compass,driveX,driveY;
 /////////////////////////////////////////////////////////
 uint16_t stable_data_count = 0;
 unsigned long millis_time_then = 0;
+void Compensate_DistanceY_When_Moving_Towards_Fence(void);
+void holdposition(void);
 bool Stable_Robot(void);
 void calculateCompassPID(void);
 void calculatevel();
 int filterLineTrackerData(int);
 void calculateLineTrackerYPid();
-void movx();
-void movy();
-void movYForwardSlow();
-void initializeAll();
-void sendDataToSlave();
-void BrakeMotor();
-int getLineTrackerYdata();
+void movx(int distance_setpoint, int direction,int speed);
+void movy(int distance_setpoint, int direction,int speed);
+void movYForwardSlow(unsigned int speed);
+bool Goto_Fence_And_Detect(void);
+void initializeAll(void);
+void sendDataToSlave(void);
+void BrakeMotor(void);
+int getLineTrackerYdata(void);
 
 inline void linetrackerXjunctionWatch();
 inline void lintrackerYjunctionWatch();
@@ -139,11 +152,12 @@ inline void linetrackerXjunctionWatchOff();
 inline void linetrackerYjunctionWatchOff();
 ////////////////////////////////////////////////////
 
-void BrakeMotor(){
+void BrakeMotor(void){
 	PORTK ^= (1<<PK0);
 }
 
 void sendDataToSlave(void){
+
 uart2_putc(START_BYTE);
 //_delay_ms(1);
 uart2_putc(bufferMotorSpeed[0]);
@@ -193,8 +207,13 @@ inline void linetrackerYjunctionWatchOff(void){
 	PCMSK2 &= ~(1<<PCINT23);
 }
 
+void Compensate_DistanceY_When_Moving_Towards_Fence(void)
+{
+	velocity_robot[1] = 0.8* encoderY.getdistance();
+}
 bool Stable_Robot(void)
 {
+	holdposition();
 	uint16_t _get_angle = 0;
 	//uart0_puts
 	//uart0_putint(millis());
@@ -220,12 +239,80 @@ bool Stable_Robot(void)
 			stable_data_count = 0;
 			return 1;
 		}
-		else return 0;
-		
+		//else return 0;
 		millis_time_then = millis();
 	}
+	
+	return 0;
 }
 
+bool Goto_Fence_And_Detect(void)
+{
+	movingyfront = false;
+	
+	if (READ(RIGHT_LIMIT_SW) && !READ(LEFT_LIMIT_SW))
+	{
+		inverseKinematicTrue = false;
+		//uart3_puts("LEFT\r\n");
+		velocity_motor[0] = 30;
+		velocity_motor[1] = 0;
+		velocity_motor[2] = 0;
+		velocity_motor[3] = -20;
+// 		velocity_robot[0] = 0;
+// 		velocity_robot[1] = 20;
+// 		velocity_robot[2] = 20;
+		time_of_limit_switches_pressed = 0;
+		first_data_time_of_limit_switches_pressed = true;
+	}
+	else if (READ(LEFT_LIMIT_SW) && !READ(RIGHT_LIMIT_SW))
+	{
+		inverseKinematicTrue = false;
+		//uart3_puts("RIGHT\r\n");
+		velocity_motor[0] = 20;
+		velocity_motor[1] = 0;
+		velocity_motor[2] = 0;
+		velocity_motor[3] = -30;
+		time_of_limit_switches_pressed = 0;
+		first_data_time_of_limit_switches_pressed = true;
+	}
+	else if (READ(LEFT_LIMIT_SW) && READ(RIGHT_LIMIT_SW))
+	{
+		inverseKinematicTrue = true;
+		//velocity_robot[0] = -20;
+		movx(500,Back,80);
+		Compensate_DistanceY_When_Moving_Towards_Fence();
+// 		velocity_robot[0] = -40;
+// 		velocity_robot[1] = 0;
+// 		velocity_robot[2] = 0;
+		time_of_limit_switches_pressed = 0;
+		first_data_time_of_limit_switches_pressed = true;	
+	}
+	
+	if (!READ(LEFT_LIMIT_SW) && !READ(RIGHT_LIMIT_SW))
+	{
+		inverseKinematicTrue = false;
+		//uart3_puts("STRAIGHT\r\n");
+		velocity_motor[0] = 10;
+		velocity_motor[1] = 0;
+		velocity_motor[2] = 0;
+		velocity_motor[3] = -10;
+		//uart3_puts("BOTH PRESSED\r\n");
+		//BrakeMotor();
+		if (first_data_time_of_limit_switches_pressed)
+		{
+			//uart3_puts("FIRST TIME LIMIT SWITCH PRESSED\r\n");
+			time_of_limit_switches_pressed = millis();
+			first_data_time_of_limit_switches_pressed = false;
+		}
+		if (millis() - time_of_limit_switches_pressed > 100)
+		{
+			return 1;
+			//uart3_puts("\r\n\n\n JOB DONE \r\n\n\n");
+			//uart3_putc(d_char_to_transmit);
+		}
+	}
+	return 0;
+}
 void calculateCompassPID(void)
 {
 	if(PidUpdateFlagCompass && compassPID)
@@ -255,7 +342,7 @@ void calculateCompassPID(void)
 				compass.Iterm = -0.2*compass.Max_output;
 		}
 		
-		if (abs(compass.error) > 1)
+		if (abs(compass.error) > 0)
 		{
 			compass.output = compass.kp*compass.error	-	compass.kd*(compass.input-compass.prevInput)	+	compass.Iterm;
 		}
@@ -286,21 +373,24 @@ void calculateCompassPID(void)
 
 void calculatevel()	//use matrix to find setpoint of individual motor and store in bufferMotorSpeed and send to slave
 {
-	for(int i=0;i<4;i++)
-	{
-		velocity_motor[i] = 0;
-		for(int j=0;j<3;j++)
+	if(inverseKinematicTrue){
+		for(int i=0;i<4;i++)
 		{
-			velocity_motor[i] += velocity_robot[j] * coupling_matrix[i][j];
-			
+			velocity_motor[i] = 0;
+			for(int j=0;j<3;j++)
+			{
+				velocity_motor[i] += velocity_robot[j] * coupling_matrix[i][j];
+				
+			}
 		}
 	}
-	bufferMotorSpeed[0] = ((velocity_motor[0]) * 23)/249;	  
-	bufferMotorSpeed[1] = ((velocity_motor[1]) * 23)/249;	  
-	bufferMotorSpeed[2] = ((velocity_motor[2]) * 23)/249;	  
+	
+	bufferMotorSpeed[0] = ((velocity_motor[0]) * 23)/249;
+	bufferMotorSpeed[1] = ((velocity_motor[1]) * 23)/249;
+	bufferMotorSpeed[2] = ((velocity_motor[2]) * 23)/249;
 	bufferMotorSpeed[3] = ((velocity_motor[3]) * 23)/249 ;
 	
-	sendDataToSlave();  
+	sendDataToSlave();
 }		
 
 
@@ -348,7 +438,7 @@ void calculateLineTrackerYPid()
 
 
 
-void initializeAll()
+void initializeAll(void)
 {
 	// 2.1, 0, 12.5 ---> P I D values of compass after compass and linetrackr tune
 	// 0.8, 0, 20   ---> P I D values of lintracker after compass and linetracker tune
@@ -373,8 +463,9 @@ void initializeAll()
 	
 }
 
-void movx(int distance_setpoint, int direction, unsigned int speed){
+void movx(int distance_setpoint, int direction,int speed){
 	//compass.setPid(2.1,0.04,32);
+	inverseKinematicTrue = true;
 	distanceX = abs(encoderX.getdistance());
 	driveX.SETPOINT = distance_setpoint;
 	if(PidUpdateFlagDriveX)
@@ -414,7 +505,7 @@ void movx(int distance_setpoint, int direction, unsigned int speed){
 			velocity_robot[0] = driveX.output;
 		}
 		else{
-				velocity_robot[0] = 60 + 0.45*distanceX;
+				velocity_robot[0] = 60 + ((speed-60)/200.0) * distanceX;
 		}
 		if(direction == Front){
 			velocity_robot[0] = velocity_robot[0];
@@ -437,8 +528,9 @@ void movx(int distance_setpoint, int direction, unsigned int speed){
 	calculateCompassPID();
 }
 
-void movy(int distance_setpoint, int direction ,unsigned int speed){
+void movy(int distance_setpoint, int direction ,int speed){
 	//compass.setPid(2.1,0.04,32);
+	inverseKinematicTrue = true;
 	distanceY = abs(encoderY.getdistance());
 	driveY.SETPOINT = distance_setpoint;
 	if(PidUpdateFlagDriveY)
@@ -503,6 +595,7 @@ void movy(int distance_setpoint, int direction ,unsigned int speed){
 }
 
 void movYForwardSlow(unsigned int speed){
+	inverseKinematicTrue = true;
 	movingxfront = false;
 	movingxback = false;
 	movingyfront = true;
@@ -514,6 +607,7 @@ void movYForwardSlow(unsigned int speed){
 }
 
 void holdposition(){
+	inverseKinematicTrue = true;
 	velocity_robot[0]  = 0;
 	velocity_robot[1] = 0;
 	//velocity_robot[2] = 0;

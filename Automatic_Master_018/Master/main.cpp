@@ -36,7 +36,7 @@ uint16_t angle_Average = 0;
 
 void checkJunctionOfY(){
 	
-	if(bit_is_set(PINK,PK0)){
+	if(bit_is_set(PINK,PK7)){
 		junctionY = true;
 	}
 	else{
@@ -169,6 +169,11 @@ int main(void)
 	///SET PK1 AS OUTPUT TO SEND SIGNAL TO SLAVE TO BRAKE MOTOR 
 	DDRK |= (1<<PK0);
 	PORTK &= ~(1<<PK0); 
+	///Turn internal pullup for limit switch pin
+	INPUT(RIGHT_LIMIT_SW);
+	INPUT(LEFT_LIMIT_SW);
+	SET(RIGHT_LIMIT_SW);
+	SET(LEFT_LIMIT_SW);
 	/// INITIALIZE ALL THE UART
 	uart0_init(UART_BAUD_SELECT(9600,F_CPU));
 	uart2_init(UART_BAUD_SELECT(38400,F_CPU));
@@ -180,11 +185,21 @@ int main(void)
 	char rcvdata = 'q';
 	sei();
 	
-	task1 = task2 = true;
-	where = inLZ1;
-	_b_Transmit_once = true;
+//  	task1 = task2= task3 = task4 = task5  = task6 = task7 = true;
+//  	where = inLZ2;
+// 	 ShuttleCockGiven = true;
+// 		 ShuttleCockArmGone = true;
+// 		 ManualInFrontOfLZ2 = false;
+ 	
+	//ManualInFrontOfLZ2 = true;
     while (1) 
-    {
+    {		
+ 		//uart3_putint(velocity_robot[0]);
+ 		//uart3_putc('\t');
+ 		//uart3_putint(velocity_robot[1]);
+ 		//uart3_putc('\t');
+ 		//uart3_putint(velocity_robot[2]);
+ 		//uart3_puts("\r\n");
 // 		rcvdata = uart0_getc();
 // 		
 // 		if (rcvdata == ' ')
@@ -198,26 +213,7 @@ int main(void)
 // 		uart0_putint(encoderY.getdistance());
 // 		uart0_puts("\r\n");
 		
-		//For calibration of compass//////////
-//    		  			if(calibrate){
-//    		 				 velocity_robot[0] = 0;
-//    		 				 velocity_robot[1] = 0;
-//    		 				 velocity_robot[2] = 60;
-//    		 				 calculatevel();
-//    						 
-//    		 				 calibrate_compass();
-//    		 				 calibrate = false;
-//    		 			 }
-//    		 			 else{
-//    		 				 velocity_robot[0] = 0;
-//    		 				 velocity_robot[1] = 0;
-//    		 				 velocity_robot[2] = 0;
-//    		 				 calculatevel();
-//    		 				 uart0_putint(X_offset);
-//    		 				 uart0_puts("\t");
-//    		 				 uart0_putint(Y_offset);
-//    		 				 uart0_puts("\n");
-//    		 			 }	 
+		//For calibration of compass////////// 
 		
 
 ///////////copy this code and run.//////////////

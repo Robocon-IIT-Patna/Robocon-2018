@@ -20,8 +20,9 @@ main.d main.o: .././main.cpp \
  .././uart.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\stdlib.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\gcc\avr\5.4.0\include\stddef.h \
- .././encoder.h .././drive.h .././Flags.h .././gy88.h .././hmccompass.h \
- .././MPU6050.h .././General-function.h .././zonedrive.h .././headers.h
+ .././encoder.h .././drive.h .././headers.h .././Flags.h .././gy88.h \
+ .././hmccompass.h .././MPU6050.h .././General-function.h \
+ .././zonedrive.h
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\io.h:
 
@@ -69,6 +70,8 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\
 
 .././drive.h:
 
+.././headers.h:
+
 .././Flags.h:
 
 .././gy88.h:
@@ -80,5 +83,3 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\
 .././General-function.h:
 
 .././zonedrive.h:
-
-.././headers.h:

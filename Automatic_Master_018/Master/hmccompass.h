@@ -28,8 +28,8 @@ int16_t y_max = 0;
 int16_t x_min = 0;
 int16_t y_min = 0;
 //////////////////////////////
-int16_t X_offset = -55;
-int16_t Y_offset = -109;
+int16_t X_offset = -49;//-55;
+int16_t Y_offset = -118;//-109;
 /////////////////////////////
 
 void init_HMC5883L(void)
