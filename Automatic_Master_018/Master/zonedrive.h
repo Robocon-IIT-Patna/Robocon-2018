@@ -189,22 +189,18 @@ void gorockthegamefield(void)
 			linetrackerXjunctionWatch();
 			//uart0_puts("int on");
 		}
-		else if(abs(encoderX.getdistance()) >= 1500){
-			giveComponent = false;
-		}
 
 	}
 	
 	///move from corner to loading zone1 if task1 is completed and task2 not completed
-	else if(task1 && !task2 && where == inStart_point){	
-		movingFromStartPoint = false;
+	else if(task1 && !task2){	
 		where = inFirstloadingCorner;
 		compass.setPid(2.0,0,30);
 		//uart0_puts("moving aheead \r\n");
 		robotState = moving;
 		linetrackerXjunctionWatchOff();
 		linetrackerYjunctionWatch();
-		MovY(1000, Front, CORNERtoLZ1);
+		MovY_Slow(1000, Front, CORNERtoLZ1);
 		//movYForwardSlow(CORNERtoLZ1);
 	}
 	/*if task2 is completed and robot just reached loading zone 1*/
@@ -216,6 +212,7 @@ void gorockthegamefield(void)
 		robotState = notmoving;
 		linetrackerYjunctionWatchOff();
 		BrakeMotor();
+		holdposition();
 		encoderX.resetCount();
 		encoderY.resetCount();
 	}
@@ -240,7 +237,7 @@ void gorockthegamefield(void)
 			/* if task3 is completed and robot just reached throwingzone 1 then*/
 			else if(task3 && !task4 && where == inLZ1 && robotState == moving){
 				linetrackerYjunctionWatchOff();
-				uart0_puts("reached throwing zone 1\r\n");
+				//uart0_puts("reached throwing zone 1\r\n");
 				BrakeMotor();
 				//uart3_putc('1');
 				where = inTZ1;
@@ -255,7 +252,7 @@ void gorockthegamefield(void)
 				//uart3_puts("Throwing \r\n");
 				holdposition();
 
-				if(_b_Transmit_once && Stable_Robot())	//Stable_Robot() && 
+				if(_b_Transmit_once)	//Stable_Robot() && 
 				{	
 					uart3_putc('1');
 					//uart3_puts("Job Done\r\n\n");
@@ -461,7 +458,7 @@ void gorockthegamefield(void)
 // 					check_stable_robot = Stable_Robot();
 // 				}
 				holdposition();
-				if(/*check_stable_robot &&Goto_Fence_And_Detect() &&*/ _b_Transmit_once )	//Stable_Robot() && 
+				if(Goto_Fence_And_Detect() && _b_Transmit_once )	//Stable_Robot() && 
 				{	
 					//uart0_puts("below \r\n");
 					uart3_putc('3');

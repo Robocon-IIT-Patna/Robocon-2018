@@ -100,7 +100,8 @@ Date        Description
 
 #include "uart.h"
 
-uint8_t buffer2;
+unsigned char buffer2;
+
 
 /*
  *  constants and macros

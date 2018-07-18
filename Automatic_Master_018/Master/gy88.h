@@ -27,8 +27,7 @@ bool readFirstData = true;
 Vector normAccel;
 
 void initGY88(){
-
-	init_HMC5883L();
+	init_HMC5883L();	//call auxillary bus first
 	mpu.Init();
 	mpu.calibrateGyro(50);
 	//mpu.calibrateAccelero(100);
@@ -102,8 +101,7 @@ uint16_t getYawGY88(){
 		}
 		filtered_roll = 0.93 * (filtered_roll + mpu.getGyroRateX() * timeStep) + 0.07 * unfiltered_roll;
 		filtered_pitch = 0.93 * (filtered_pitch + mpu.getGyroRateY() * timeStep) + 0.07 * unfiltered_pitch;
-		unfiltered_yaw = compass_tilt_compensation(filtered_roll * DEG_TO_RAD , filtered_pitch * DEG_TO_RAD ,read_rawX(),read_rawY(),read_rawZ() );
-		//unfiltered_yaw = getAverageCompensatedYaw();
+		unfiltered_yaw = getAverageCompensatedYaw();
 		filtered_yaw = 0.1 * (filtered_yaw + mpu.getGyroRateZ() * timeStep) + 0.9 * unfiltered_yaw;
 			
 	}
