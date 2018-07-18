@@ -17,7 +17,7 @@
 #include "drive.h"
 #include "zonedrive.h"
 #include "headers.h"
-#include "gy88.h"
+//#include "gy88.h"
 
 
 ////////////////objects of classes///////////
@@ -90,12 +90,14 @@ void reactConditionOfLineLeft(){
 	if(movingyback || movingyfront){
 		if(lineTrackerData == 0 && previousLinetrackerData == 10 && !junctionY)
 		{
+			uart3_puts("a");
 			ltY.leftedgeleft = true;
 			ltY.rightedgeleft = false;
 			lineMeet = false;
 		}
 		else if(lineTrackerData == 0 && previousLinetrackerData == 80 && !junctionY)
 		{
+			uart3_putc('b');
 			ltY.rightedgeleft = true;
 			ltY.leftedgeleft = false;
 			lineMeet = false;
@@ -104,11 +106,13 @@ void reactConditionOfLineLeft(){
 		
 		////If line left by linetracker find when line is meet
 		if(ltY.rightedgeleft && lineTrackerData == 80){
+			uart3_putc('c');
 			lineMeet = true;
 			ltY.rightedgeleft = false;
 			ltY.leftedgeleft = false;
 		}
 		else if(ltY.leftedgeleft && lineTrackerData == 10){
+			uart3_putc('d');
 			lineMeet = true;
 			ltY.leftedgeleft = false;
 			ltY.rightedgeleft = false;
@@ -117,38 +121,41 @@ void reactConditionOfLineLeft(){
 		
 		////////// if edge is left and junction is detected //////
 		if((ltY.leftedgeleft || ltY.rightedgeleft) && junctionY){
+			uart3_putc('e');
 			if(movingyfront){
 				velocity_robot[0] = 0;		//x
-				velocity_robot[1] = 40;		//y
+				velocity_robot[1] = 30;		//y
 				calculateCompassPID();
 			}
 			else if(movingyback){
 				velocity_robot[0] = 0;
-				velocity_robot[1] = -40;
+				velocity_robot[1] = -30;
 				calculateCompassPID();
 			}
 		}
 		/////////////////////////////////////////////////////////
 		else if(ltY.leftedgeleft){
+			uart3_putc('f');
 			if(movingyfront){
-				velocity_robot[0] = -40;
+				velocity_robot[0] = -30;
 				velocity_robot[1] = 10;
 				calculateCompassPID();
 			}
 			else if(movingyback){
-				velocity_robot[0] = -40;
+				velocity_robot[0] = -30;
 				velocity_robot[1] = -10;
 				calculateCompassPID();
 			}
 		}
 		else if(ltY.rightedgeleft ){
+			uart3_puts("g\r\n");
 			if(movingyfront){
-				velocity_robot[0] = 40;
+				velocity_robot[0] = 30;
 				velocity_robot[1] = 10;
 				calculateCompassPID();
 			}
 			else if(movingyback){
-				velocity_robot[0] = 40;
+				velocity_robot[0] = 30;
 				velocity_robot[1] = -10;
 				calculateCompassPID();
 			}
@@ -177,63 +184,85 @@ int main(void)
 	/// INITIALIZE ALL THE UART
 	uart0_init(UART_BAUD_SELECT(9600,F_CPU));
 	uart2_init(UART_BAUD_SELECT(38400,F_CPU));
-	uart3_init(UART_BAUD_SELECT(38400,F_CPU));
+	uart3_init(UART_BAUD_SELECT(9600,F_CPU));
 	//INITIALIZE EVERYTHING ELSE
  	
-	uart0_puts("starting\r\n");
+	//uart0_puts("starting\r\n");
 	initializeAll();
 	char rcvdata = 'q';
 	sei();
 	
+	//task1 = task2= task3 = task4 = task5 =  true;
+	//where = inLZ2;
 //  	task1 = task2= task3 = task4 = task5  = task6 = task7 = true;
-//  	where = inLZ2;
-// 	 ShuttleCockGiven = true;
-// 		 ShuttleCockArmGone = true;
-// 		 ManualInFrontOfLZ2 = false;
- 	
+//   	where = inLZ2;
+//// 	 ShuttleCockGiven = true;
+//// 		 ShuttleCockArmGone = true;
+ 		 ManualInFrontOfLZ2 = false;
 	//ManualInFrontOfLZ2 = true;
     while (1) 
     {		
- 		//uart3_putint(velocity_robot[0]);
- 		//uart3_putc('\t');
- 		//uart3_putint(velocity_robot[1]);
- 		//uart3_putc('\t');
- 		//uart3_putint(velocity_robot[2]);
- 		//uart3_puts("\r\n");
-// 		rcvdata = uart0_getc();
+// // 		rcvdata = uart0_getc();
+// // 		
+// // 		if (rcvdata == ' ')
+// // 		{
+// // 			encoderX.resetCount();
+// // 			encoderY.resetCount();
+// // 		}
+// // 		
+// // 		uart0_putint(encoderX.getdistance());
+// // 		uart0_putc('\t');
+// // 		uart0_putint(encoderY.getdistance());
+ 		
 // 		
-// 		if (rcvdata == ' ')
-// 		{
-// 			encoderX.resetCount();
-// 			encoderY.resetCount();
-// 		}
+// 		//For calibration of compass////////// 
 // 		
-// 		uart0_putint(encoderX.getdistance());
-// 		uart0_putc('\t');
-// 		uart0_putint(encoderY.getdistance());
-// 		uart0_puts("\r\n");
-		
-		//For calibration of compass////////// 
-		
-
-///////////copy this code and run.//////////////
-//get linetracker data
-lineTrackerData = getLineTrackerYdata();
-//get compass data
-//compass_Angle = get_Angle();
-//Check the junction of Y linetracker
-checkJunctionOfY();
-//call the gameplay function
-//changeCompassSetpoint();
-gorockthegamefield();
-//check for line left condition and react to it
-reactConditionOfLineLeft();
-//calculate velocity of each motor and send to slave
-calculatevel();
-//set previous line tracker data
-previousLinetrackerData = linetracker_data;
-//////not below this line///////////////////////
-// 		
+// 
+// ///////////copy this code and run.//////////////
+// //get linetracker data
+// lineTrackerData = getLineTrackerYdata();
+// //get compass data
+// //compass_Angle = get_Angle();
+// //Check the junction of Y linetracker
+ //checkJunctionOfY();
+// //call the gameplay function
+// //changeCompassSetpoint();
+ gorockthegamefield();
+// //check for line left condition and react to it
+ //reactConditionOfLineLeft();
+ //calculate velocity of each motor and send to slave
+ calculatevel();
+// //set previous line tracker data
+// previousLinetrackerData = linetracker_data;
+// //////not below this line///////////////////////
+// //uart3_putint(compass.SETPOINT);
+// //uart3_puts("\t");
+// //uart3_putint(getYawGY88());
+// //uart3_puts("\t");
+// //uart3_putint(compass.output);
+// //uart3_puts("\t");
+ //uart0_putint(encoderY.getdistance());
+  //uart3_puts("\t");
+  //uart3_putint(getLineTrackerYdata());
+ //uart3_puts("\t");
+ //uart3_putint(velocity_robot[0]);
+ //uart3_puts("\t");
+ //uart3_putint(velocity_robot[1]);
+ //uart3_puts("\t");
+ //uart3_putint(velocity_robot[2]);
+ 
+ uart0_putint(velocity_motor[0]);
+ uart0_puts("\t");
+ uart0_putint(velocity_motor[1]);
+ uart0_puts("\t");
+ uart0_putint(velocity_motor[2]);
+ uart0_puts("\t");
+ uart0_putint(velocity_motor[3]);
+ uart0_puts("\t");
+ 
+ //uart0_puts("\r\n");
+// 
+// // 		
 	}
 }
 

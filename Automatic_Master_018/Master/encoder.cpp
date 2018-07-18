@@ -18,6 +18,10 @@ volatile bool PidUpdateFlagLinetracker = true;
 volatile bool PidUpdateFlagCompass = true;
 volatile bool PidUpdateFlagDriveX = true;
 volatile bool PidUpdateFlagDriveY = true;
+volatile bool PidUpdateFlagLinetrackerFront = true;
+volatile bool PidUpdateFlagLinetrackerBack = true;
+
+char count;
 
 
 void encoder::Init_encoder_interrupt()
@@ -61,11 +65,16 @@ ISR(INT5_vect)	//for y-axis encoder
 }
 
 ISR(TIMER0_OVF_vect)
-{
+{ 
+ 	//count++;
+ 	//if(count == 2){
 	PidUpdateFlagCompass = true;
 	PidUpdateFlagLinetracker = true;
- 
+	PidUpdateFlagLinetrackerBack = true;
+	PidUpdateFlagLinetrackerFront = true;
+
 	PidUpdateFlagDriveX = true;
 	PidUpdateFlagDriveY = true;
-	
+		//count = 0;
+	//}
 }

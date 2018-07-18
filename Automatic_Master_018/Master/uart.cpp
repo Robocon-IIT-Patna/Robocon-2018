@@ -100,6 +100,7 @@ Date        Description
 
 #include "uart.h"
 
+uint8_t buffer2;
 
 /*
  *  constants and macros
@@ -902,33 +903,34 @@ Function: UART2 Receive Complete interrupt
 Purpose:  called when the UART2 has received a character
 **************************************************************************/
 {
-	unsigned char tmphead;
-	unsigned char data;
-	unsigned char usr;
-	unsigned char lastRxError;
-
-
-	/* read UART status register and UART data register */
-	usr = UART2_STATUS;
-	data = UART2_DATA;
-
-	/* */
-	lastRxError = (usr & (_BV(FE2) | _BV(DOR2)));
-
-	/* calculate buffer index */
-	tmphead = (UART2_RxHead + 1) & UART_RX_BUFFER_MASK;
-
-	if (tmphead == UART2_RxTail) {
-		/* error: receive buffer overflow */
-		lastRxError = UART_BUFFER_OVERFLOW >> 8;
-	}
-	else {
-		/* store new index */
-		UART2_RxHead = tmphead;
-		/* store received data in buffer */
-		UART2_RxBuf[tmphead] = data;
-	}
-	UART2_LastRxError = lastRxError;
+	buffer2 = UDR2;
+	//unsigned char tmphead;
+	//unsigned char data;
+	//unsigned char usr;
+	//unsigned char lastRxError;
+//
+//
+	///* read UART status register and UART data register */
+	//usr = UART2_STATUS;
+	//data = UART2_DATA;
+//
+	///* */
+	//lastRxError = (usr & (_BV(FE2) | _BV(DOR2)));
+//
+	///* calculate buffer index */
+	//tmphead = (UART2_RxHead + 1) & UART_RX_BUFFER_MASK;
+//
+	//if (tmphead == UART2_RxTail) {
+		///* error: receive buffer overflow */
+		//lastRxError = UART_BUFFER_OVERFLOW >> 8;
+	//}
+	//else {
+		///* store new index */
+		//UART2_RxHead = tmphead;
+		///* store received data in buffer */
+		//UART2_RxBuf[tmphead] = data;
+	//}
+	//UART2_LastRxError = lastRxError;
 }
 
 
@@ -998,22 +1000,23 @@ void uart2_init(unsigned int baudrate)
  **************************************************************************/
 unsigned int uart2_getc(void)
 {
-	unsigned char tmptail;
-	unsigned char data;
-
-
-	if (UART2_RxHead == UART2_RxTail) {
-		return UART_NO_DATA;   /* no data available */
-	}
-
-	/* calculate /store buffer index */
-	tmptail = (UART2_RxTail + 1) & UART_RX_BUFFER_MASK;
-	UART2_RxTail = tmptail;
-
-	/* get data from receive buffer */
-	data = UART2_RxBuf[tmptail];
-
-	return (UART2_LastRxError << 8) + data;
+	return buffer2;
+	//unsigned char tmptail;
+	//unsigned char data;
+//
+//
+	//if (UART2_RxHead == UART2_RxTail) {
+		//return UART_NO_DATA;   /* no data available */
+	//}
+//
+	///* calculate /store buffer index */
+	//tmptail = (UART2_RxTail + 1) & UART_RX_BUFFER_MASK;
+	//UART2_RxTail = tmptail;
+//
+	///* get data from receive buffer */
+	//data = UART2_RxBuf[tmptail];
+//
+	//return (UART2_LastRxError << 8) + data;
 
 }/* uart2_getc */
 

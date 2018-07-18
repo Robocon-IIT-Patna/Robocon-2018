@@ -12,14 +12,14 @@
 #define PI		3.14159265
 #define START_BYTE	127
 
-#define STARTZONEtoCORNER	150
+#define STARTZONEtoCORNER	220
 #define CORNERtoLZ1			40
-#define LZ1toTZ1			100
-#define	TZ1toLZ1			100
-#define LZ1toLZ2			100
-#define LZ2toTZ2			100
-#define	TZ2toLZ2			100
-#define LZ2toTZ3			150
+#define LZ1toTZ1			150
+#define	TZ1toLZ1			150
+#define LZ1toLZ2			150
+#define LZ2toTZ2			150
+#define	TZ2toLZ2			150
+#define LZ2toTZ3			240
 
 #include "headers.h"
 #include "uart.h"
@@ -31,6 +31,9 @@
 
 extern encoder encoderY, encoderX;
 
+
+int currentDistance = 0, difference = 0;
+bool fullspeed = false;
 unsigned long startTime;
 
 /*****************************Limit switch pins*************************/
@@ -44,6 +47,8 @@ bool first_data_time_of_limit_switches_pressed = true;
 extern bool PidUpdateFlagCompass;
 extern bool PidUpdateFlagDriveX;
 extern bool PidUpdateFlagLinetracker;
+extern bool PidUpdateFlagLinetrackerFront;
+extern bool PidUpdateFlagLinetrackerBack;
 extern bool PidUpdateFlagDriveY;
 //////////////////// For Motor variables //////////////////////
 signed char bufferMotorSpeed[4] = {0,0,0,0};
@@ -56,8 +61,9 @@ double value = PI / 180;
 int distanceX;
 int distanceY;
 uint16_t initialCompassAngle;
-
-
+////For initial conditions/////////
+bool giveComponent = true;
+bool movingFromStartPoint = true;
 
 bool lineMeet = true;
 bool movingxfront = false;
@@ -137,13 +143,12 @@ void calculatevel();
 int filterLineTrackerData(int);
 void calculateLineTrackerYPid();
 void movx(int distance_setpoint, int direction,int speed);
-void movy(int distance_setpoint, int direction,int speed);
-void movYForwardSlow(unsigned int speed);
 bool Goto_Fence_And_Detect(void);
 void initializeAll(void);
 void sendDataToSlave(void);
 void BrakeMotor(void);
-int getLineTrackerYdata(void);
+int getLineTrackerYBackData();
+int getLineTrackerYFrontData();
 
 inline void linetrackerXjunctionWatch();
 inline void lintrackerYjunctionWatch();
@@ -151,9 +156,367 @@ inline void lintrackerYjunctionWatch();
 inline void linetrackerXjunctionWatchOff();
 inline void linetrackerYjunctionWatchOff();
 ////////////////////////////////////////////////////
+//16th july
+int8_t _direction_matrix[5][4] = {{-1, -1, 1, 1}, {1, 1, -1, -1}, {1, -1, -1, 1}, {-1, 1, 1, -1}, {0, 0, 0, 0}};
+uint8_t _axis = 7, _direction = 7;
+bodyPid FrontLinetrackerY_, BackLinetrackerY_;
+
+ void Calculate_Front_LinetrackerY_Pid(void);
+ void Calculate_Back_LinetrackerY_Pid(void);
+ void Calculate_Velocity(void);
+ void Calculate_Motor_Differential_Velocity_With_Center_Pivot(int d_speed);
+ void Calculate_Motor_Differential_Velocity_With_Wheel_Pivot(int d_speed);
+ void MovX(int distance_setpoint, int direction, unsigned int speed);
+ void MovY(int distance_setpoint, int direction, unsigned int speed);
+// 
+// //16th july
+
+void Calculate_Front_LinetrackerY_Pid(void)
+{
+	if(FrontLinetrackerY_.FirstData && getLineTrackerYFrontData() != 0){
+		FrontLinetrackerY_.prevInput = getLineTrackerYFrontData();
+		FrontLinetrackerY_.FirstData = false;
+	}
+	else if(PidUpdateFlagLinetrackerBack && linetrackerPID){
+		FrontLinetrackerY_.input = getLineTrackerYFrontData();
+		//if linetracker input is not zero///
+		if(FrontLinetrackerY_.input != 0 && lineMeet){
+			//uart0_puts("calculating\n");
+			FrontLinetrackerY_.error = FrontLinetrackerY_.SETPOINT - FrontLinetrackerY_.input;
+			if((FrontLinetrackerY_.error) == 0)
+			{
+				FrontLinetrackerY_.Iterm = 0;
+			}
+			if(FrontLinetrackerY_.error == 0)
+			FrontLinetrackerY_.prevInput = FrontLinetrackerY_.input;
+			FrontLinetrackerY_.Iterm += FrontLinetrackerY_.ki * FrontLinetrackerY_.error;
+			if(abs(FrontLinetrackerY_.Iterm) > 5){
+				if(FrontLinetrackerY_.Iterm > 0)	FrontLinetrackerY_.Iterm = 5;
+				else if(FrontLinetrackerY_.Iterm < 0)	FrontLinetrackerY_.Iterm = -5;
+			}
+			FrontLinetrackerY_.output = FrontLinetrackerY_.kp * FrontLinetrackerY_.error + FrontLinetrackerY_.Iterm - FrontLinetrackerY_.kd *(FrontLinetrackerY_.input - FrontLinetrackerY_.prevInput);
+			FrontLinetrackerY_.prevInput = FrontLinetrackerY_.input;
+			if (abs(FrontLinetrackerY_.output) > 80)
+			{
+				if (FrontLinetrackerY_.output > 0){FrontLinetrackerY_.output = 80;}
+				else{FrontLinetrackerY_.output = -80;}
+			}
+
+		}
+
+		PidUpdateFlagLinetrackerFront = false;
+
+	}
+	if(!linetrackerPID)
+	FrontLinetrackerY_.output = 0;
+
+}
+
+void Calculate_Back_LinetrackerY_Pid(void)
+{
+	if(BackLinetrackerY_.FirstData && getLineTrackerYBackData() != 0){
+		BackLinetrackerY_.prevInput = getLineTrackerYBackData();
+		BackLinetrackerY_.FirstData = false;
+	}
+
+	if(PidUpdateFlagLinetrackerBack && linetrackerPID){
+		BackLinetrackerY_.input = getLineTrackerYBackData();
+		//if linetracker input is not zero///
+		if(BackLinetrackerY_.input != 0 && lineMeet){
+			BackLinetrackerY_.error = BackLinetrackerY_.SETPOINT - BackLinetrackerY_.input;
+			if((BackLinetrackerY_.error) == 0)
+			{
+				BackLinetrackerY_.Iterm = 0;
+			}
+// 			if(BackLinetrackerY_.error == 0)
+// 				BackLinetrackerY_.prevInput = BackLinetrackerY_.input;
+			BackLinetrackerY_.Iterm += BackLinetrackerY_.ki * BackLinetrackerY_.error;
+			if(abs(BackLinetrackerY_.Iterm) > 5){
+				if(BackLinetrackerY_.Iterm > 0)	BackLinetrackerY_.Iterm = 5;
+				else if(BackLinetrackerY_.Iterm < 0)	BackLinetrackerY_.Iterm = -5;
+			}
+			BackLinetrackerY_.output = BackLinetrackerY_.kp * BackLinetrackerY_.error + BackLinetrackerY_.Iterm - BackLinetrackerY_.kd *(BackLinetrackerY_.input - BackLinetrackerY_.prevInput);
+			BackLinetrackerY_.prevInput = BackLinetrackerY_.input;
+			if (abs(BackLinetrackerY_.output) > 80)
+			{
+				if (BackLinetrackerY_.output > 0){BackLinetrackerY_.output = 80;}
+				else{BackLinetrackerY_.output = -80;}
+			}
+		}
+
+		PidUpdateFlagLinetrackerBack
+		 = false;
+
+	}
+
+	if(!linetrackerPID)
+	BackLinetrackerY_.output = 0;
+
+}
+
+ void MovX(int distance_setpoint, int direction, unsigned int speed){
+// 	//compass.setPid(2.1,0.04,32);
+ 	distanceX = abs(encoderX.getdistance());
+	driveX.SETPOINT = distance_setpoint;
+ 	if(PidUpdateFlagDriveX)
+ 	{
+  		movingyfront = false;
+  		movingyback = false;
+  		driveX.input = distanceX;
+  		PidUpdateFlagDriveX = false;
+ 		if(distanceX >= 200){
+  			driveX.error = driveX.SETPOINT - driveX.input;
+  			driveX.Iterm += driveX.ki * driveX.error;
+  			if(driveX.FirstData){
+  				driveX.prevInput = driveX.input;
+  				driveX.FirstData = false;
+  			}
+  			if(abs(driveX.Iterm) > 10){
+  				if(driveX.Iterm > 0)	driveX.Iterm = 10;
+  				if(driveX.Iterm < 0)	driveX.Iterm = -10;
+  			}
+  			if((driveX.error) > 0){
+  				driveX.output = driveX.kp * driveX.error + driveX.Iterm - driveX.kd*(driveX.input - driveX.prevInput);
+  			}
+  			else{
+  				driveX.output = 0;
+  			}
+  			driveX.prevInput = driveX.input;
+  			//////////////////////////////////////////////////////
+  			if(abs(driveX.output) > speed){
+  				if(driveX.output >0)	driveX.output = speed;
+  				else						driveX.output = -speed;
+  			}
+		 
+  			if(abs(driveX.output) < 20){
+  				if(movingxfront)		driveX.output = 20;
+  				else if(movingxback)	driveX.output = -20;
+  			}
+		 }
+  			////////////////////////////////////////////////////
+  		else{
+  			driveX.output = 60 + 0.45*distanceX;
+  			}
+	}
+ // 
+  		_axis = X_Axis;
+  
+		if(direction == Front){
+			movingxfront = true;
+			movingxback = false;
+			movingyback = false;
+			movingyfront = false;
+			_direction = Front;
+		}
+		else if(direction == Back){
+			movingxfront = false;
+			movingxback = true;
+			movingyfront = false;
+			movingyback = false;
+			_direction = Back;
+		}
+
+//	}
+
+ 	Calculate_Motor_Differential_Velocity_With_Center_Pivot(driveX.output);
+}
+// 
+ void MovY(int distance_setpoint, int direction ,unsigned int speed)
+ {
+ 	//compass.setPid(2.1,0.04,32);
+ 	distanceY = abs(encoderY.getdistance());
+ 	driveY.SETPOINT = distance_setpoint;
+ 	if(PidUpdateFlagDriveY)
+ 	{
+ 		PidUpdateFlagDriveY = false;
+ 		if(distanceY >= 600)
+ 		{
+ 			driveY.input = distanceY;
+ 			driveY.error = driveY.SETPOINT - driveY.input;
+ 			driveY.Iterm += driveY.ki * driveY.error;
+ 			if(driveY.FirstData){
+ 				driveY.prevInput = driveY.input;
+ 				driveY.FirstData = false;
+ 			}
+ 			if(abs(driveY.Iterm) > 10){
+ 				if(driveY.Iterm > 0)	driveY.Iterm = 10;
+ 				if(driveY.Iterm < 0)	driveY.Iterm = -10;
+ 			}
+ 			if(driveY.error > 0){
+ 				driveY.output = driveY.kp * driveY.error;// + driveY.Iterm - driveY.kd*(driveY.input - driveY.prevInput);
+ 			}
+ 			else{
+ 				driveY.output = 0;
+ 			}
+ 			driveY.prevInput = driveY.input;
+ 			////////////////////////////////////////////////////////////
+ 			/////////////////////////////////////////////////////////
+ 		}
+ 		else
+ 		{
+ 			driveY.output = 60 + (distanceY*0.15);
+ 		}
+		 
+		 
+		if(abs(driveY.output) >= speed){
+			driveY.output = speed;
+			//if(movingyfront)		driveY.output = speed;
+			//else if(movingyback)	driveY.output = -speed;
+		}
+		//if(abs(driveY.output) < 20){
+			//driveY.output = 20;
+			//if(movingyfront)		driveY.output = 20;
+			//else if(movingyback)	driveY.output = -20;
+		//}
+ 		_axis = Y_Axis;
+ 		if(direction == Front){
+ 			movingyfront = true;
+ 			movingyback = false;
+ 			movingxfront = false;
+ 			movingxback = false;
+ 			_direction = Front;
+ 		}
+ 		else if(direction == Back){
+ 			movingyback = true;
+ 			movingyfront = false;
+ 			movingxfront = false;
+ 			movingxback  = false;
+ 			_direction = Back;
+ 		}
+ 
+ 	}
+	 Calculate_Motor_Differential_Velocity_With_Center_Pivot(driveY.output);
+ 	//Calculate_Motor_Differential_Velocity_With_Wheel_Pivot(driveY.output);
+ }
+ 
+ 
+  void Calculate_Motor_Differential_Velocity_With_Center_Pivot(int d_speed)
+  {
+  	inverseKinematicTrue = false;
+ 	Calculate_Front_LinetrackerY_Pid();
+ 	Calculate_Back_LinetrackerY_Pid();
+ 	
+	 if (_direction == Front)
+	 {
+		 velocity_motor[0] = d_speed + FrontLinetrackerY_.output;
+		 velocity_motor[1] = d_speed - FrontLinetrackerY_.output;
+		 velocity_motor[2] = d_speed + BackLinetrackerY_.output;
+		 velocity_motor[3] = d_speed - BackLinetrackerY_.output;
+	 }
+	 else
+	 {
+		 velocity_motor[0] = d_speed - FrontLinetrackerY_.output;
+		 velocity_motor[1] = d_speed + FrontLinetrackerY_.output;
+		 velocity_motor[2] = d_speed - BackLinetrackerY_.output;
+		 velocity_motor[3] = d_speed + BackLinetrackerY_.output;
+	 }
+  	
+ 	Calculate_Velocity();
+  }
+ 
+  void Calculate_Motor_Differential_Velocity_With_Wheel_Pivot(int d_speed)
+  {
+	  inverseKinematicTrue = false;
+	  Calculate_Front_LinetrackerY_Pid();
+	  Calculate_Back_LinetrackerY_Pid();
+	  
+	  if (_direction == Front)
+	  {
+		  if (FrontLinetrackerY_.output > 0)
+		  {
+			  velocity_motor[0] = d_speed + FrontLinetrackerY_.output;
+			  velocity_motor[1] = d_speed;
+			  velocity_motor[2] = d_speed  + BackLinetrackerY_.output;
+			  velocity_motor[3] = d_speed;
+		  }
+		  else
+		  {
+			  velocity_motor[0] = d_speed;
+			  velocity_motor[1] = d_speed - FrontLinetrackerY_.output;
+			  velocity_motor[2] = d_speed;
+			  velocity_motor[3] = d_speed - BackLinetrackerY_.output;
+		  }
+	  }
+	  else if (_direction == Back)
+	  {
+		  if (FrontLinetrackerY_.output > 0)
+		  {
+			  velocity_motor[0] = d_speed;
+			  velocity_motor[1] = d_speed + FrontLinetrackerY_.output;
+			  velocity_motor[2] = d_speed;
+			  velocity_motor[3] = d_speed + BackLinetrackerY_.output;
+		  }
+		  else
+		  {
+			  velocity_motor[0] = d_speed - FrontLinetrackerY_.output;
+			  velocity_motor[1] = d_speed;
+			  velocity_motor[2] = d_speed - BackLinetrackerY_.output;
+			  velocity_motor[3] = d_speed;
+		  }
+	  }
+	  
+	Calculate_Velocity();
+	  
+  }
+// 
+ void Calculate_Velocity(void)
+ {
+ 	uint8_t ii = 4;
+ 
+ 	if (_axis == X_Axis)
+ 	{
+ 		if (_direction == Front){ ii = 0; }
+ 		else if (_direction == Back) { ii = 1; }
+ 	}
+ 	else if (_axis == Y_Axis)
+ 	{
+ 		if (_direction == Front){ ii = 2; }
+ 		else if (_direction == Back) { ii = 3; }
+ 	}
+ 
+ 	for (uint8_t jj = 0; jj < 4; jj++)
+ 	{
+ 		velocity_motor[jj] = velocity_motor[jj] * _direction_matrix[ii][jj];
+ 	}
+ }
+// 
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ int getLineTrackerYBackData(void){
+ 	for(int i = 0; i <= 7; i++){
+ 		if(bit_is_set(PINC,i)){
+ 			lineBit[i] = 1;
+ 			linestate |= (1<<i);
+ 		}
+ 		else{
+ 			lineBit[i] = 0;
+ 		}
+ 		totalSum += weight[i]*lineBit[i];
+ 		totalLine += lineBit[i];
+ 	}
+ 	linetracker_data = totalSum/totalLine;
+ 	totalSum = 0;
+ 	totalLine = 0;
+ 	return linetracker_data;
+ }
+ 
+ int getLineTrackerYFrontData(void){
+
+ 	int data = /*filterLineTrackerData*/(uart2_getc());
+ 	
+	if(data == 255){
+ 		data = 0;
+ 		return(data);
+ 	}
+ 	else
+ 	return (data + 10);
+ }
 
 void BrakeMotor(void){
 	PORTK ^= (1<<PK0);
+	movingxback = false;
+	movingxfront = false;
+	movingyfront = false;
+	movingyback = false;
 }
 
 void sendDataToSlave(void){
@@ -279,11 +642,11 @@ bool Goto_Fence_And_Detect(void)
 	{
 		inverseKinematicTrue = true;
 		//velocity_robot[0] = -20;
-		movx(500,Back,80);
-		Compensate_DistanceY_When_Moving_Towards_Fence();
-// 		velocity_robot[0] = -40;
-// 		velocity_robot[1] = 0;
-// 		velocity_robot[2] = 0;
+		//movx(500,Back,30);
+		//Compensate_DistanceY_When_Moving_Towards_Fence();
+ 		velocity_robot[0] = -40;
+ 		velocity_robot[1] = 5;
+ 		velocity_robot[2] = 0;
 		time_of_limit_switches_pressed = 0;
 		first_data_time_of_limit_switches_pressed = true;	
 	}
@@ -342,7 +705,7 @@ void calculateCompassPID(void)
 				compass.Iterm = -0.2*compass.Max_output;
 		}
 		
-		if (abs(compass.error) > 0)
+		if (abs(compass.error) > 1)
 		{
 			compass.output = compass.kp*compass.error	-	compass.kd*(compass.input-compass.prevInput)	+	compass.Iterm;
 		}
@@ -387,12 +750,31 @@ void calculatevel()	//use matrix to find setpoint of individual motor and store 
 	
 	bufferMotorSpeed[0] = ((velocity_motor[0]) * 23)/249;
 	bufferMotorSpeed[1] = ((velocity_motor[1]) * 23)/249;
-	bufferMotorSpeed[2] = ((velocity_motor[2]) * 23)/249;
-	bufferMotorSpeed[3] = ((velocity_motor[3]) * 23)/249 ;
-	
+
+bufferMotorSpeed[2] = ((velocity_motor[2]) * 23)/249;
+bufferMotorSpeed[3] = ((velocity_motor[3]) * 23)/249 ;
+
 	sendDataToSlave();
 }		
 
+int filterLineTrackerData(int newData)
+{
+	int data;
+	
+	if (previousLinetrackerData == 70 && newData >= 255)
+	data = 255;
+	else if (previousLinetrackerData == 0 && newData >= 255)
+	data = 255;
+	else if (previousLinetrackerData >= 0 && previousLinetrackerData <= 70 && abs(newData) > 70)
+	data = previousLinetrackerData;
+	else
+	{
+		data = newData;
+		previousLinetrackerData = data;
+	}
+	
+	return data;
+}
 
 
 void calculateLineTrackerYPid()
@@ -443,28 +825,32 @@ void initializeAll(void)
 	// 2.1, 0, 12.5 ---> P I D values of compass after compass and linetrackr tune
 	// 0.8, 0, 20   ---> P I D values of lintracker after compass and linetracker tune
 	
-	compass.Set_Max_Min_Output(80,0);	
+	//compass.Set_Max_Min_Output(40,0);	
 	
-	ltY.SETPOINT = 45;
-	compass.setPid(2.1,0,12.5);//3.7,0.3,12);//2,0,31);//4,0.09,18);	//5.5, 0, 500 , 2.1,0.04,32
-	ltY.setPid(0.8,0,20);//0.58,0.05,370);
-	driveX.setPid(0.15,0,1.5);		
-	driveY.setPid(0.15,0,1.5);
+	//ltY.SETPOINT = 45;
+	FrontLinetrackerY_.SETPOINT =45;
+	BackLinetrackerY_.SETPOINT = 45;
+	//compass.setPid(8,0,52);//3.7,0.3,12);//2,0,31);//4,0.09,18);	//5.5, 0, 500 , 2.1,0.04,32
+	//ltY.setPid(1.2,0,25);//0.58,0.05,370);
+	FrontLinetrackerY_.setPid(1.2,0,16);
+	BackLinetrackerY_.setPid(1.2,0,16);
+	driveX.setPid(0.1,0,1.5);		
+	driveY.setPid(0.1,0,1.5);
 
- 	initGY88();
- 	startTime = millis();
- 	//uart0_puts("down loop \r\n");
- 	while((millis() - startTime) < 500){	//take 500 ms to set setpoint of compass
-  		initialCompassAngle = getYawGY88();
- 		//uart0_puts("1st \r\n");
-  		compass.FirstData = false;
-  		compass.SETPOINT = initialCompassAngle;
-  	}
+ 	//initGY88();
+//  	startTime = millis();
+//  	//uart0_puts("down loop \r\n");
+//  	while((millis() - startTime) < 500){	//take 500 ms to set setpoint of compass
+//   		initialCompassAngle = getYawGY88();
+//  		//uart0_puts("1st \r\n");
+//   		compass.FirstData = false;
+//   		compass.SETPOINT = initialCompassAngle;
+//  	}
 	
 }
 
+
 void movx(int distance_setpoint, int direction,int speed){
-	//compass.setPid(2.1,0.04,32);
 	inverseKinematicTrue = true;
 	distanceX = abs(encoderX.getdistance());
 	driveX.SETPOINT = distance_setpoint;
@@ -474,7 +860,7 @@ void movx(int distance_setpoint, int direction,int speed){
 		movingyback = false;
 		driveX.input = distanceX;
 		PidUpdateFlagDriveX = false;
-		if(distanceX >= 200){
+		if(distanceX >= 600){
 			driveX.error = driveX.SETPOINT - driveX.input;
 			driveX.Iterm += driveX.ki * driveX.error;
 			if(driveX.FirstData){
@@ -497,15 +883,20 @@ void movx(int distance_setpoint, int direction,int speed){
 				if(driveX.output >0)	driveX.output = speed;
 				else						driveX.output = -speed;
 			}
-			if(abs(driveX.output) < 20){
-				if(movingxfront)		driveX.output = 20;
-				else if(movingxback)	driveX.output = -20;
-			}
+ 			if(abs(driveX.output) < 20){
+ 				if(movingxfront)		driveX.output = 20;
+ 				else if(movingxback)	driveX.output = -20;
+ 			}
 			//////////////////////////////////////////////////////
 			velocity_robot[0] = driveX.output;
 		}
 		else{
-				velocity_robot[0] = 60 + ((speed-60)/200.0) * distanceX;
+			if(movingFromStartPoint){
+				velocity_robot[0] = 30 + 0.316 * distanceX;
+			}
+			else{
+				velocity_robot[0] = 60 + 0.15 * distanceX;
+			}
 		}
 		if(direction == Front){
 			velocity_robot[0] = velocity_robot[0];
@@ -523,96 +914,33 @@ void movx(int distance_setpoint, int direction,int speed){
 		}
 	
 	}
-	velocity_robot[1] = 0;
-	//velocity_robot[2] = 0;
-	calculateCompassPID();
-}
-
-void movy(int distance_setpoint, int direction ,int speed){
-	//compass.setPid(2.1,0.04,32);
-	inverseKinematicTrue = true;
-	distanceY = abs(encoderY.getdistance());
-	driveY.SETPOINT = distance_setpoint;
-	if(PidUpdateFlagDriveY)
-	{
-			PidUpdateFlagDriveY = false;
-			if(distanceY >= 200)
-			{
-				driveY.input = distanceY;
-				driveY.error = driveY.SETPOINT - driveY.input;
-				driveY.Iterm += driveY.ki * driveY.error;
-				if(driveY.FirstData){
-					driveY.prevInput = driveY.input;
-					driveY.FirstData = false;
-				}
-				if(abs(driveY.Iterm) > 10){
-					if(driveY.Iterm > 0)	driveY.Iterm = 10;
-					if(driveY.Iterm < 0)	driveY.Iterm = -10;
-				}
-				if(driveY.error > 0){
-					driveY.output = driveY.kp * driveY.error + driveY.Iterm - driveY.kd*(driveY.input - driveY.prevInput);
-				}
-				else{
-					driveY.output = 0;
-				}
-				driveY.prevInput = driveY.input;
-				////////////////////////////////////////////////////////////
-				if(abs(driveY.output) >= speed){
-					if(movingyfront)		driveY.output = speed;
-					else if(movingyback)	driveY.output = -speed;
-				}
-				if(abs(driveY.output) < 20){
-					if(movingyfront)		driveY.output = 20;
-					else if(movingyback)	driveY.output = -20;
-				}
-				/////////////////////////////////////////////////////////
-				velocity_robot[1] = driveY.output;
-			}
-			else
-			{
-				velocity_robot[1] = 60 + (distanceY*0.45);
-			}
-			if(direction == Front){
-				movingyfront = true;
-				movingyback = false;
-				movingxfront = false;
-				movingxback = false;
-				velocity_robot[1] = velocity_robot[1];
-			}
-			else if(direction == Back){
-				movingyback = true;
-				movingyfront = false;
-				movingxfront = false;
-				movingxback  = false;
-				velocity_robot[1] = -abs(velocity_robot[1]);
-			}
+	if(movingFromStartPoint){
+		if(giveComponent){
+			velocity_robot[1] = -30;
+		}
+		else{
+			velocity_robot[1] = -25;
+		}
+	}
+	else{
+		velocity_robot[1] = 0;
 		
 	}
-	//velocity_robot[0] = 0;
-	calculateLineTrackerYPid();
-	//velocity_robot[2] = 0;
-	calculateCompassPID();
-}
-
-void movYForwardSlow(unsigned int speed){
-	inverseKinematicTrue = true;
-	movingxfront = false;
-	movingxback = false;
-	movingyfront = true;
-	movingyback = false;
-	//compass.setPid(2.5,0.41,14);
-	velocity_robot[1] = speed;
-	calculateLineTrackerYPid();
-	calculateCompassPID();
+	//calculateCompassPID();
+// 	uart0_putint(velocity_robot[0]);
+// 	uart0_puts("  hello\r\n");
+	velocity_robot[2] = 0;
+	
 }
 
 void holdposition(){
+	compass.SETPOINT = 181;
 	inverseKinematicTrue = true;
 	velocity_robot[0]  = 0;
 	velocity_robot[1] = 0;
-	//velocity_robot[2] = 0;
-	compass.setPid(7,0,12);//4.2,0.24,32);	//5.1,0,31
-	calculateCompassPID();
+	velocity_robot[2] = 0;
+	//compass.setPid(8,0,52);//4.2,0.24,32);	//5.1,0,31
+	//calculateCompassPID();
 }
 
 
