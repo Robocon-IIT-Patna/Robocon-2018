@@ -182,7 +182,8 @@ void gorockthegamefield(void)
 	if(!task1 && where == inStart_point){	
 		compass.setPid(2.0,0,30);
 		//uart0_puts("hello\r\n");
-		movx(Throwingzone1.x,Front,STARTZONEtoCORNER);
+		//movx(Throwingzone1.x,Front,STARTZONEtoCORNER);
+		movDegree(7);
 		robotState = moving;
 		//uart0_puts("going ahead \t");
 		if(abs(encoderX.getdistance()) >= 4400){
@@ -195,12 +196,14 @@ void gorockthegamefield(void)
 	///move from corner to loading zone1 if task1 is completed and task2 not completed
 	else if(task1 && !task2){	
 		where = inFirstloadingCorner;
+		startingAtFront = false;
 		compass.setPid(2.0,0,30);
 		//uart0_puts("moving aheead \r\n");
 		robotState = moving;
 		linetrackerXjunctionWatchOff();
 		linetrackerYjunctionWatch();
-		MovY_Slow(1000, Front, CORNERtoLZ1);
+		movYForwardSlow(30);
+		//MovY_Slow(1000, Front, CORNERtoLZ1);
 		//movYForwardSlow(CORNERtoLZ1);
 	}
 	/*if task2 is completed and robot just reached loading zone 1*/

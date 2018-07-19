@@ -169,7 +169,7 @@ int main(void)
 	/// INITIALIZE ALL THE UART
 	uart0_init(UART_BAUD_SELECT(9600,F_CPU));
 	uart2_init(UART_BAUD_SELECT(38400,F_CPU));
-	uart3_init(UART_BAUD_SELECT(38400,F_CPU));
+	uart3_init(UART_BAUD_SELECT(9600,F_CPU));
 	//INITIALIZE EVERYTHING ELSE
 	initializeAll();
 	
