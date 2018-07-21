@@ -22,130 +22,6 @@
 ////////////////objects of classes///////////
 encoder encoderX,encoderY;
 ////////////////////////////////////////////
-bool junctionY;
-bool junctionX;
-
-unsigned int linetrackerDataFront;
-unsigned int linetrackerDataBack;
-unsigned int previousLinetrackerDataFront;
-unsigned int previousLinetrackerDataBack;
-
-void checkJunctionOfY(){
-	
-	if(bit_is_set(PINK,PK7)){
-		junctionY = true;
-	}
-	else{
-		junctionY = false;
-	}
-	
-}
-void checkJunctionOfX(){
-	if(bit_is_set(PINB,PB4)){
-		junctionX = true;
-	}
-	else{
-		junctionX = false;
-	}
-}
-
-void reactConditionOfLineLeftFront(){
-	//////////Find the condition when line is left in front linetracker////////
-		linetrackerDataFront = getLineTrackerYFrontData();
-		if(linetrackerDataFront == 0 && previousLinetrackerDataFront == 10)
-		{
-			ltYFront.leftedgeleft = true;
-			ltYFront.rightedgeleft = false;
-			lineMeet = false;
-		}
-		else if(linetrackerDataFront == 0 && previousLinetrackerDataFront == 80)
-		{
-			ltYFront.rightedgeleft = true;
-			ltYFront.leftedgeleft = false;
-			lineMeet = false;
-		}
-		/////////////////////////////////////////////////////
-		
-		////If line left by linetracker find when line is meet
-		if(ltYFront.rightedgeleft && linetrackerDataFront == 80){
-			lineMeet = true;
-			ltYFront.rightedgeleft = false;
-			ltYFront.leftedgeleft = false;
-		}
-		else if(ltYFront.leftedgeleft && linetrackerDataFront == 10){
-			lineMeet = true;
-			ltYFront.leftedgeleft = false;
-			ltYFront.rightedgeleft = false;
-		}
-		///////////////////////////////////////////////////////
-		if(movingyfront){
-			////////// if edge is left and junction is detected //////
-			if(ltYFront.leftedgeleft){
-					velocity_robot[0] = -40;
-					velocity_robot[1] = 10;
-					calculateCompassPID();
-			}
-			else if(ltYFront.rightedgeleft ){
-					velocity_robot[0] = 40;
-					velocity_robot[1] = 10;
-					calculateCompassPID();
-			}
-	}
-	previousLinetrackerDataFront = linetrackerDataFront;
-}
-
-void reactConditionOfLineLeftBack(){
-	//////////Find the condition when line is left////////
-	checkJunctionOfY();
-	linetrackerDataBack = getLineTrackerYBackData();
-		if(linetrackerDataBack == 0 && previousLinetrackerDataBack == 10 && !junctionY)
-		{
-			ltYBack.leftedgeleft = true;
-			ltYBack.rightedgeleft = false;
-			lineMeet = false;
-		}
-		else if(linetrackerDataBack == 0 && previousLinetrackerDataBack == 80 && !junctionY)
-		{
-			ltYBack.rightedgeleft = true;
-			ltYBack.leftedgeleft = false;
-			lineMeet = false;
-		}
-		/////////////////////////////////////////////////////
-		
-		////If line left by linetracker find when line is meet
-		if(ltYBack.rightedgeleft && linetrackerDataBack == 80){
-			lineMeet = true;
-			ltYBack.rightedgeleft = false;
-			ltYBack.leftedgeleft = false;
-		}
-		else if(ltYBack.leftedgeleft && linetrackerDataBack == 10){
-			lineMeet = true;
-			ltYBack.leftedgeleft = false;
-			ltYBack.rightedgeleft = false;
-		}
-		///////////////////////////////////////////////////////
-		
-		if(movingyback){
-			////////// if edge is left and junction is detected //////
-			if((ltYBack.leftedgeleft || ltYBack.rightedgeleft) && junctionY){
-					velocity_robot[0] = 0;
-					velocity_robot[1] = -40;
-					calculateCompassPID();
-			}
-			/////////////////////////////////////////////////////////
-			else if(ltYBack.leftedgeleft){
-					velocity_robot[0] = -40;
-					velocity_robot[1] = -10;
-					calculateCompassPID();
-			}
-			else if(ltYBack.rightedgeleft ){
-					velocity_robot[0] = 40;
-					velocity_robot[1] = -10;
-					calculateCompassPID();
-			}
-	}
-	previousLinetrackerDataBack = linetrackerDataBack;
-}
 
 int main(void)
 {
@@ -169,7 +45,7 @@ int main(void)
 	/// INITIALIZE ALL THE UART
 	uart0_init(UART_BAUD_SELECT(9600,F_CPU));
 	uart2_init(UART_BAUD_SELECT(38400,F_CPU));
-	uart3_init(UART_BAUD_SELECT(9600,F_CPU));
+	uart3_init(UART_BAUD_SELECT(38400,F_CPU));
 	//INITIALIZE EVERYTHING ELSE
 	initializeAll();
 	
@@ -178,9 +54,15 @@ int main(void)
 // 	where = inLZ2;
 // 	robotState = notmoving;
 	//ShuttleCockGiven = ShuttleCockArmGone = true;
+	char rcvdata = 't';
 	sei();
     while (1) 
     {
+		
+// 		rcvdata = uart0_getc();
+// 		uart3_putc(rcvdata);
+	//	uart0_putc(rcvdata);
+
  		gorockthegamefield();
 // 		
 // 		reactConditionOfLineLeftFront();

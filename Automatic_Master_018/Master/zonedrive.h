@@ -74,8 +74,8 @@ struct coordinates{
 	int y;
 	};
 
-const struct coordinates Throwingzone1 = {4600,1980};	//4700 -x 1900 -y
-const struct coordinates Throwingzone2 = {6600,1950}; 
+const struct coordinates Throwingzone1 = {4600,1900};	//4700 -x 1900 -y
+const struct coordinates Throwingzone2 = {6600,1900}; 
 const struct coordinates Throwingzone3 = {6500,5200};
 
 /////////////////////////////////////////
@@ -158,7 +158,7 @@ void gorockthegamefield(void)
 				where = inLZ2;
 				ManualInFrontOfLZ2 = false;
 				updateZoneflag();
-				holdposition();
+				Hold_Position();
 			}
 			else if (ManualInFrontOfLZ2){
 				task6 = task7 = false;
@@ -166,14 +166,14 @@ void gorockthegamefield(void)
 			}
 			else{
 				updateZoneflag();
-				holdposition();
+				Hold_Position();
 			}
 		}
 		
 		/*if the robot is in loading zone 1 or loading zone 2  otherwise */
 		else{
 			updateZoneflag();
-			holdposition();
+			Hold_Position();
 		}
 	}
 	
@@ -183,7 +183,7 @@ void gorockthegamefield(void)
 		compass.setPid(2.0,0,30);
 		//uart0_puts("hello\r\n");
 		//movx(Throwingzone1.x,Front,STARTZONEtoCORNER);
-		movDegree(7);
+		movDegree(8);
 		robotState = moving;
 		//uart0_puts("going ahead \t");
 		if(abs(encoderX.getdistance()) >= 4400){
@@ -202,7 +202,7 @@ void gorockthegamefield(void)
 		robotState = moving;
 		linetrackerXjunctionWatchOff();
 		linetrackerYjunctionWatch();
-		movYForwardSlow(30);
+		movYForwardSlow(CORNERtoLZ1);
 		//MovY_Slow(1000, Front, CORNERtoLZ1);
 		//movYForwardSlow(CORNERtoLZ1);
 	}
@@ -215,7 +215,7 @@ void gorockthegamefield(void)
 		robotState = notmoving;
 		linetrackerYjunctionWatchOff();
 		BrakeMotor();
-		holdposition();
+		Hold_Position();
 		encoderX.resetCount();
 		encoderY.resetCount();
 	}
@@ -228,7 +228,7 @@ void gorockthegamefield(void)
 			if(GoThrowingZone1 && !task3 && where == inLZ1){
 				robotState = moving;
 				compass.setPid(2.0,0,30);
-				MovY(Throwingzone1.y,Front,LZ1toTZ1);
+				Move_Yaxis(Throwingzone1.y+50,Front,LZ1toTZ1);
 				//movy(Throwingzone1.y,Front,LZ1toTZ1);
 				//uart0_puts("going tz1\t");
 				if(abs(encoderY.getdistance()) >= 1600){
@@ -253,7 +253,7 @@ void gorockthegamefield(void)
 			   mechanism acknowledges throwing*/
 			if(where == inTZ1 && robotState == notmoving){
 				//uart3_puts("Throwing \r\n");
-				holdposition();
+				Hold_Position();
 
 				if(_b_Transmit_once)	//Stable_Robot() && 
 				{	
@@ -273,7 +273,7 @@ void gorockthegamefield(void)
 			if(backtoLZ1 && task3 && !task4){
 				compass.setPid(2.0,0,30);
 				//uart0_puts("Returning from tz1 \t");
-				MovY(Throwingzone1.y, Back, LZ1toTZ1);
+				Move_Yaxis(Throwingzone1.y+25, Back, LZ1toTZ1);
 				//movy(Throwingzone1.y, Back,TZ1toLZ1);
 				robotState = moving;
 				if(abs(encoderY.getdistance()) >= 1200){
@@ -302,7 +302,7 @@ void gorockthegamefield(void)
 			else if(gotoLZ2 && !task5){
 				//uart0_puts("heading loading zone 2\t");
 				compass.setPid(2.0,0,30);
-				movx(2000,Front,LZ1toLZ2);
+				movx(2100,Front,LZ1toLZ2);
 				robotState = moving;
 				if(abs(encoderX.getdistance()) >= 1900){
 					//uart0_puts("interrupt on");
@@ -334,7 +334,7 @@ void gorockthegamefield(void)
 				//uart0_puts("going tz2 \t");
 				compass.setPid(2.0,0,30);
 				robotState = moving;
-				MovY(Throwingzone2.y, Front, LZ2toTZ2);
+				Move_Yaxis(Throwingzone2.y+50, Front, LZ2toTZ2);
 				//movy(Throwingzone2.y, Front,LZ2toTZ2);
 			
 				if(abs(encoderY.getdistance()) >=1200){
@@ -366,7 +366,7 @@ void gorockthegamefield(void)
 // 				}
 				velocity_robot[0] =0;
 				velocity_robot[1]=0;
-				holdposition();
+				Hold_Position();
 				if(/*check_stable_robot &&Goto_Fence_And_Detect() &&*/ _b_Transmit_once)	//Stable_Robot() &&
 				{
 					uart3_putc('2');
@@ -394,7 +394,7 @@ void gorockthegamefield(void)
 					//}
 				//}
 				//else{
-					MovY(Throwingzone2.y, Back, LZ2toTZ2);
+					Move_Yaxis(Throwingzone2.y+50, Back, LZ2toTZ2);
 					//movy(Throwingzone2.y,Back,TZ2toLZ2);
 					robotState = moving;
 			
@@ -410,7 +410,7 @@ void gorockthegamefield(void)
 			/*if after returning from throwing zone2 junction on line is detected then stop and wait for
 			communication*/
 			else if(task7 && robotState == moving && where == inTZ2 ){
-				holdposition();
+				Hold_Position();
 				//uart0_puts("reached loading zone 2 \r\n");
 				linetrackerYjunctionWatchOff();
 				BrakeMotor();
@@ -429,7 +429,7 @@ void gorockthegamefield(void)
 				compass.setPid(2.0,0,30);//2.0
 				//uart0_puts("going tz3 \t");
 				compass.SETPOINT = 181;
-				MovY(Throwingzone3.y, Front, LZ2toTZ3);
+				Move_Yaxis(Throwingzone3.y-50, Front, LZ2toTZ3);
 				//movy(5300,Front,LZ2toTZ3);
 				robotState = moving;
 				if(abs(encoderY.getdistance()) >= 4000){
@@ -460,7 +460,7 @@ void gorockthegamefield(void)
 // 				{
 // 					check_stable_robot = Stable_Robot();
 // 				}
-				holdposition();
+				Hold_Position();
 				if(Goto_Fence_And_Detect() && _b_Transmit_once )	//Stable_Robot() && 
 				{	
 					//uart0_puts("below \r\n");
