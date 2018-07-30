@@ -113,12 +113,25 @@ bool task8 = false;
 bool task9 = false;
 bool xJunctionMeetFromTZ2 = false;
 
+//this indicates main switch on
 extern bool mainSwitchOn;
+
+//this indicates godirectly to loading zone 2 and after that normal game
 extern bool directlyLZ2;
+
+//this indicates godirectly to tz3 and throw
 extern bool directlyTZ3;
+
+//this indicates goto tz3 from lz2 directly
 extern bool LZ2ForTZ3;
+
+//this indicates always throw from tz2
 extern bool alwaysTZ2;
+
+//this indicates always throw from tz1
 extern bool alwaysTZ1;
+
+//this indicates normal game
 extern bool normalGame;
 
 //////////////////////////
@@ -130,19 +143,7 @@ char receiveAck;
 void gorockthegamefield(void)
 {
 	
-//  	if(task1){uart0_puts("1");}
-// 	if(task2){uart0_puts("2");}
-// 		if(task3){uart0_puts("3");}
-// 		if(task4){uart0_puts("4");}
-// 			if(task5){uart0_puts("5");}
-// 			if(task6){uart0_puts("6");}
-// 				if(task7){uart0_puts("7");}
-// 				if(task8){uart0_puts("8");}
-	
-	
-
 	if((where == inLZ1 || where == inLZ2) && robotState == notmoving){
-		
 		/*if the robot is in loading zone 1 after completing task3 and task4 
 		but yet to complete task5*/ 
 		if(task4 && !task5){
@@ -162,26 +163,41 @@ void gorockthegamefield(void)
 				GoThrowingZone1 = true;
 				task3 = task4 = false;
 				updateZoneflag();
-				//holdposition();
 			}	
 		}
-		else if(task6 && task7 ){
-			if((ZONE_STATUSPORT & (1<< ZONE_STATUSPIN)) && !alwaysTZ2){
-				where = inLZ2;
-				ManualInFrontOfLZ2 = false;
+ 		else if(task6 && task7 ){
+			 //if manual robot is not ahead and not always throw from throwing zone 2
+			 //or just goto throwing zone 3 from loading zone 2		
+ 			if( ((ZONE_STATUSPORT & (1<< ZONE_STATUSPIN)) && !alwaysTZ2) || LZ2ForTZ3){
+			    /*uart0_puts("no manual in front\r\n");*/
+ 				where = inLZ2;
+ 				ManualInFrontOfLZ2 = false;
+ 				updateZoneflag();
+ 				Hold_Position();
+ 			}
+			//if there is manual robot ahead of automatic robot && robot is not going 
+			//..directly to throwing zone 3 
+ 			else if (!(ZONE_STATUSPORT & (1<< ZONE_STATUSPIN)) && !LZ2ForTZ3){
+				/*uart0_puts("manual infront \r\n");*/
+				ManualInFrontOfLZ2 = true;
+ 				xJunctionMeetFromTZ2 = false;
+				updateZoneflag();
+				Hold_Position();
+ 			}
+			//if always throw from throwing zone 2
+			//automatic robot must force to know there is manual robot ahead.
+			else if(alwaysTZ2){
+				/*uart0_puts("always tz2 \r\n");*/
+				ManualInFrontOfLZ2 = true;
 				updateZoneflag();
 				Hold_Position();
 			}
-			else if (ManualInFrontOfLZ2){
-				task6 = task7 = false;
-				xJunctionMeetFromTZ2 = false;
-			}
-			else{
-				updateZoneflag();
-				Hold_Position();
-			}
-		}
-		
+			//otherwise updatezone flag
+ 			else{
+ 				updateZoneflag();
+ 				Hold_Position();
+ 			}
+ 		}
 		/*if the robot is in loading zone 1 or loading zone 2  otherwise */
 		else{
 			updateZoneflag();
@@ -195,30 +211,29 @@ void gorockthegamefield(void)
 		compass.setPid(2.0,0,30);
 		//uart0_puts("hello\r\n");
 		movx(Throwingzone1.x,Front,STARTZONEtoCORNER);
-		//movDegree(10);
+		//movDegree(8);
 		robotState = moving;
 		//uart0_puts("going ahead \t");
 		if(abs(encoderX.getdistance()) >= 4400){
 			linetrackerXjunctionWatch();
 			//uart0_puts("int on");
 		}
-
+		//uart0_puts("\r\n");
 	}
 	else if((directlyLZ2 || directlyTZ3 || LZ2ForTZ3 || alwaysTZ2) && !task1){
 		movx((Throwingzone2.x),Front,STARTZONEtoCORNER);
 		robotState = moving;
 		if(abs(encoderX.getdistance()) >= 6600){
-			uart0_puts("interrupt on\t");
+			//uart0_puts("interrupt on\t");
 			linetrackerXjunctionWatch();
 		}
 	}
-	
 	///move from corner to loading zone1 if task1 is completed and task2 not completed
 	else if(task1 && !task2){	
 		where = inFirstloadingCorner;
 		startingAtFront = false;
 		compass.setPid(2.0,0,30);
-		//uart0_puts("moving aheead \r\n");
+		uart0_puts("moving aheead \r\n");
 		robotState = moving;
 		linetrackerXjunctionWatchOff();
 		linetrackerYjunctionWatch();
@@ -229,9 +244,10 @@ void gorockthegamefield(void)
 	/*if task2 is completed and robot just reached loading zone 1*/
 	else if(task1 && task2 && where == inFirstloadingCorner && (robotState == moving) && (normalGame||alwaysTZ1)){
 		where = inLZ1;
+		compass.SETPOINT = getYawGY88();
 		uart3_putc('h');
 		//uart0_puts("in loading zone 1\r\n");
-		compass.SETPOINT = getYawGY88();
+		//compass.setPid(2.0,0,30);
 		robotState = notmoving;
 		linetrackerYjunctionWatchOff();
 		BrakeMotor();
@@ -241,6 +257,7 @@ void gorockthegamefield(void)
 	}
 	else if(where == inFirstloadingCorner && task2 && (directlyLZ2 || directlyTZ3 || LZ2ForTZ3 || alwaysTZ2) && robotState == moving){
 		linetrackerYjunctionWatchOff();
+		uart3_putc('h');
 		startingAtFront = false;
 		where = inLZ2;
 		robotState = notmoving;
@@ -274,9 +291,9 @@ void gorockthegamefield(void)
 			if(GoThrowingZone1 && !task3 && where == inLZ1){
 				robotState = moving;
 				compass.setPid(2.0,0,30);
-				Move_Yaxis(Throwingzone1.y+200,Front,LZ1toTZ1);
+				Move_Yaxis(Throwingzone1.y+50,Front,LZ1toTZ1);
 				//movy(Throwingzone1.y,Front,LZ1toTZ1);
-				//uart0_puts("going tz1\t");
+				uart0_puts("going tz1\t");
 				if(abs(encoderY.getdistance()) >= 1600){
 					linetrackerYjunctionWatch();
 					//uart0_puts("INT ON");
@@ -298,7 +315,7 @@ void gorockthegamefield(void)
 			/* if in throwing zone 1 and robot is notmoving then hold this position and wait till throwing
 			   mechanism acknowledges throwing*/
 			if(where == inTZ1 && robotState == notmoving){
-				//uart3_puts("Throwing \r\n");
+			//	uart0_puts("Throwing \r\n");
 				Hold_Position();
 
 				if(_b_Transmit_once)	//Stable_Robot() && 
@@ -310,6 +327,7 @@ void gorockthegamefield(void)
 				
 				receiveAck = uart3_getc();
 				if(receiveAck == 'g'){
+					//uart0_puts("received ack\r\n");
 					backtoLZ1 = true;
 					GoThrowingZone1 = false;
 					receiveAck = ' ';
@@ -370,17 +388,16 @@ void gorockthegamefield(void)
 				//this statement below determines automatic robot is not moving and waiting for shuttlecock loading;
 				ShuttleCockGiven = false;
 				ShuttleCockArmGone = false;
-
 			}
 			
 			
 			/*if there is manual robot ahead of automatic robot && golden rack is not given and shuttlecock
 			is given*/
 			if(GoThrowingZone2 && !task6 ){
-				//uart0_puts("going tz2 \t");
+				uart0_puts("going tz2 \t");
 				compass.setPid(2.0,0,30);
 				robotState = moving;
-				Move_Yaxis(Throwingzone2.y+150, Front, LZ2toTZ2);
+				Move_Yaxis(Throwingzone2.y+50, Front, LZ2toTZ2);
 				//movy(Throwingzone2.y, Front,LZ2toTZ2);
 			
 				if(abs(encoderY.getdistance()) >=1200){
@@ -473,8 +490,8 @@ void gorockthegamefield(void)
 			/*if golden rack is given to automatic robot and says goto throwingzone 1*/
 			if(GoThrowingZone3 && !task8){
 				compass.setPid(2.0,0,30);//2.0
-				//uart0_puts("going tz3 \t");
-				/*compass.SETPOINT = 181;*/
+				uart0_puts("going tz3 \t");
+				compass.SETPOINT = 181;
 				Move_Yaxis(Throwingzone3.y-50, Front, LZ2toTZ3);
 				//movy(5300,Front,LZ2toTZ3);
 				robotState = moving;
@@ -507,23 +524,14 @@ void gorockthegamefield(void)
 // 					check_stable_robot = Stable_Robot();
 // 				}
 				Hold_Position();
-				if(Goto_Fence_And_Detect() && _b_Transmit_once )	
+				if(Goto_Fence_And_Detect() && _b_Transmit_once )	//Stable_Robot() && 
 				{	
 					//uart0_puts("below \r\n");
 					uart3_putc('3');
 					_b_Transmit_once = false;
 				}
 				receiveAck = uart3_getc();
-				uart0_putc(receiveAck);
-				if(receiveAck == 'p'){		//p for press
-					uart0_puts("press true\r\n");
-					pressRobot = true;
-				}
-				else if(receiveAck == 'd') {	//d for don't press
-					uart0_puts("press false \r\n");
-					pressRobot = false;
-				}
-				else if(receiveAck == 'g'){
+				if(receiveAck == 'g'){
 					backtoLZ2 = true;
 					GoThrowingZone3 = false;
 					receiveAck = ' ';
@@ -575,18 +583,16 @@ void gorockthegamefield(void)
 //  		if(task8)	uart0_puts("8 \n");
 //  		else        uart0_puts("0 \n");
 
-
 }
 
 void updateZoneflag(void){
-	//uart0_puts("update \r\n");
 	/*if low on shuttlecock pin then shuttlecock received
 	i.e if manual robot arm is extended to give shuttlecock*/
 	if(!ShuttleCockGiven){
 		//uart0_puts("entered above \r\n");
 		if(!(PINL & (1<<PL6)) &&  where == inLZ1 ){
-			//uart0_puts("Shuttlecock given in LZ1\r\n");
 			//'w' is sent to throwing mechanism to grip shuttlecock
+			uart0_puts("shuttlecock given \r\n");
 			uart3_putc('o');
 			ShuttleCockGiven = true;
 			//certain delay is needed so that robot first grabs shuttlecock and moves//
@@ -596,26 +602,27 @@ void updateZoneflag(void){
 		/*if low on shuttlecock pin then shuttlecock received
 		i.e if manual robot arm is extended to give shuttlecock*/
 		else if(!(SHUTTLECOCK_STATUSPORT & (1<<SHUTTLECOCK_STATUSPIN)) &&  where == inLZ2 && ManualInFrontOfLZ2){
-			//uart0_puts("Shuttlecock given in loading zone 2\r\nManual robot ahead \r\n");
+		/*	uart0_puts("Shuttlecock given in loading zone 2\r\nManual robot ahead \r\n");*/
 			//'o' is sent to throwing mechanism to grip shuttlecock
 			uart3_putc('o');
 			ShuttleCockGiven = true;
 			//certain delay is needed so that robot first grabs shuttlecock and moves//
 			GoThrowingZone1 = false;
 			GoThrowingZone2 = true;
+			//robotState = moving;
 			task3 = task4 = task5 = true;
 			task6 = task7 = false;
 		}
 		//if manual robot arm is not extended	
 		else{
-			//uart0_puts("shuttlecock not given \r\n"); 
+			/*uart0_puts("shuttlecock not given \r\n"); */
 			ShuttleCockGiven = false;
 		}
 	}
 	//if shuttlecock given and arm is gone send 'w' to throwing mechanism to give to gripper
 	//and move robot
 	if(ShuttleCockGiven && (PINL & (1<<PL6)) &&  (where == inLZ1 || where == inLZ2) ){
-		//uart0_puts("Shuttlecock arm gone \r\n");
+		/*uart0_puts("Shuttlecock arm gone \r\n");*/
 		ShuttleCockArmGone = true;
 		uart3_putc('w');
 	}
@@ -632,12 +639,13 @@ void updateZoneflag(void){
 			//'f' is sent to throwing mechanism to tell to throwing zone 3 from golden rack
 			task6 = task7 = true;
 			task8 = task9 = false;
-			//uart0_puts("going throwing zone 3\r\n");
+			/*uart0_puts("going throwing zone 3\r\n");*/
 			uart3_putc('j');
 			GoldenRackGiven = true;
 			ShuttleCockArmGone = true;
 			ShuttleCockGiven = true;
 			GoThrowingZone3 = true;
+			robotState = moving;
 			GoThrowingZone2 = false;
 		}
 		//if rack is not above geneva but robot is in loading zone 2
@@ -654,11 +662,12 @@ void updateZoneflag(void){
 }
 
 
-/*When Junction on Linetracker X is deteced*/
+/*When Junction on Linetracker X is detected*/
 ISR(PCINT0_vect)		
 {
 	if(!task1){
-		task1 = true;			//reached to corner of loading zone1
+		task1 = true;
+		//reached to corner of loading zone1
 		FlagChangeSetpointCompass = true;
 	}
 	else if(!task5){
@@ -680,8 +689,8 @@ ISR(PCINT0_vect)
 ISR(PCINT2_vect)
 {
 	if(!task2){
-		BrakeMotor();
 		task2 = true;		//reached to loading zone 1
+		BrakeMotor();
 	}
 	else if(!task3){
 		_b_Transmit_once = true;

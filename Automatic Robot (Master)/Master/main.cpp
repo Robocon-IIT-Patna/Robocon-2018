@@ -51,12 +51,12 @@ int main(void)
 	
 	char rcvdata = 't';
 	sei();
-	
+
     while (1) 
-    {
-		
-		gorockthegamefield();
- 		calculatevel();
+    {	
+ 		gorockthegamefield();
+  		calculatevel();
 	}
 }
+
 

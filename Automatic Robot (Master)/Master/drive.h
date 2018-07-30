@@ -189,7 +189,6 @@ void initializeAll()
 	
 	initGY88();
 	startTime = millis();
-	//uart0_puts("down loop \r\n");
 	while((millis() - startTime) < 500){	//take 100 ms to set setpoint of compass
 		initialCompassAngle = getYawGY88();
 		//uart0_puts("1st \r\n");
