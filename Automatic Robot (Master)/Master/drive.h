@@ -301,6 +301,8 @@ bool Goto_Fence_And_Detect(void)
 
 void calculateCompassPID(void)
 {
+	compass.setPid(6.6,0.02,10);
+	
 	if(PidUpdateFlagCompass && compassPID)
 	{
 		
@@ -379,7 +381,7 @@ void calculatevel()	//use matrix to find setpoint of individual motor and store 
 
 
 void movx(int distance_setpoint, int direction, unsigned int speed){
-	//compass.setPid(2.1,0.04,32);
+	compass.setPid(6.6,0.02,10);
 	inverseKinematicsTrue = true;
 	distanceX = abs(encoderX.getdistance());
 	driveX.SETPOINT = distance_setpoint;
@@ -455,8 +457,8 @@ void movx(int distance_setpoint, int direction, unsigned int speed){
 
 void movYForwardSlow(unsigned int speed){
 	
-	FrontLinetrackerY_.setPid(0.6,0,16);
-	BackLinetrackerY_.setPid(0.6,0,16);
+	FrontLinetrackerY_.setPid(1.0,0.02,6.0);
+	BackLinetrackerY_.setPid(1.0,0.02,6.0);
 	
 	_axis = Y_Axis;
 	_direction = Front;
@@ -773,8 +775,8 @@ void Move_Xaxis(int distance_setpoint, int direction, unsigned int speed){
 //
 void Move_Yaxis(int distance_setpoint, int direction ,unsigned int speed)
 {
-	FrontLinetrackerY_.setPid(1.2,0,16);
-	FrontLinetrackerY_.setPid(1.2,0,16);
+	FrontLinetrackerY_.setPid(1.0,0.02,12.0);
+	BackLinetrackerY_.setPid(1.0,0.02,12.0);
 	
 	distanceY = abs(encoderY.getdistance());
 	driveY.SETPOINT = distance_setpoint;
@@ -947,8 +949,8 @@ void Hold_Position(void)
 	_direction = Back;
 	
 	
- 	FrontLinetrackerY_.setPid(1.8,0,10);
- 	BackLinetrackerY_.setPid(1.8,0,10);
+ 	FrontLinetrackerY_.setPid(1.8,0.02,6);
+ 	BackLinetrackerY_.setPid(1.8,0.02,6);
 	
 	Calculate_Motor_Differential_Velocity_With_Center_Pivot(0);
 }
