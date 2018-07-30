@@ -194,8 +194,8 @@ void gorockthegamefield(void)
 	if(!task1 && where == inStart_point && (normalGame||alwaysTZ1)){	
 		compass.setPid(2.0,0,30);
 		//uart0_puts("hello\r\n");
-		//movx(Throwingzone1.x,Front,STARTZONEtoCORNER);
-		movDegree(8);
+		movx(Throwingzone1.x,Front,STARTZONEtoCORNER);
+		//movDegree(10);
 		robotState = moving;
 		//uart0_puts("going ahead \t");
 		if(abs(encoderX.getdistance()) >= 4400){
@@ -231,7 +231,7 @@ void gorockthegamefield(void)
 		where = inLZ1;
 		uart3_putc('h');
 		//uart0_puts("in loading zone 1\r\n");
-		//compass.setPid(2.0,0,30);
+		compass.SETPOINT = getYawGY88();
 		robotState = notmoving;
 		linetrackerYjunctionWatchOff();
 		BrakeMotor();
@@ -274,7 +274,7 @@ void gorockthegamefield(void)
 			if(GoThrowingZone1 && !task3 && where == inLZ1){
 				robotState = moving;
 				compass.setPid(2.0,0,30);
-				Move_Yaxis(Throwingzone1.y+50,Front,LZ1toTZ1);
+				Move_Yaxis(Throwingzone1.y+200,Front,LZ1toTZ1);
 				//movy(Throwingzone1.y,Front,LZ1toTZ1);
 				//uart0_puts("going tz1\t");
 				if(abs(encoderY.getdistance()) >= 1600){
@@ -380,7 +380,7 @@ void gorockthegamefield(void)
 				//uart0_puts("going tz2 \t");
 				compass.setPid(2.0,0,30);
 				robotState = moving;
-				Move_Yaxis(Throwingzone2.y+50, Front, LZ2toTZ2);
+				Move_Yaxis(Throwingzone2.y+150, Front, LZ2toTZ2);
 				//movy(Throwingzone2.y, Front,LZ2toTZ2);
 			
 				if(abs(encoderY.getdistance()) >=1200){
@@ -474,7 +474,7 @@ void gorockthegamefield(void)
 			if(GoThrowingZone3 && !task8){
 				compass.setPid(2.0,0,30);//2.0
 				//uart0_puts("going tz3 \t");
-				compass.SETPOINT = 181;
+				/*compass.SETPOINT = 181;*/
 				Move_Yaxis(Throwingzone3.y-50, Front, LZ2toTZ3);
 				//movy(5300,Front,LZ2toTZ3);
 				robotState = moving;
@@ -507,14 +507,23 @@ void gorockthegamefield(void)
 // 					check_stable_robot = Stable_Robot();
 // 				}
 				Hold_Position();
-				if(Goto_Fence_And_Detect() && _b_Transmit_once )	//Stable_Robot() && 
+				if(Goto_Fence_And_Detect() && _b_Transmit_once )	
 				{	
 					//uart0_puts("below \r\n");
 					uart3_putc('3');
 					_b_Transmit_once = false;
 				}
 				receiveAck = uart3_getc();
-				if(receiveAck == 'g'){
+				uart0_putc(receiveAck);
+				if(receiveAck == 'p'){		//p for press
+					uart0_puts("press true\r\n");
+					pressRobot = true;
+				}
+				else if(receiveAck == 'd') {	//d for don't press
+					uart0_puts("press false \r\n");
+					pressRobot = false;
+				}
+				else if(receiveAck == 'g'){
 					backtoLZ2 = true;
 					GoThrowingZone3 = false;
 					receiveAck = ' ';
