@@ -31,7 +31,7 @@ extern pid ma,mb,mc,md;
 	motor4 -> 1.95, 0 , 6
 */
 
-
+;
 char data = 0;
 
 void doall(void){
@@ -69,96 +69,38 @@ UART3TransmitString("\r\n");
 int main(void)
 {
  	PCICR |= (1<<PCIE0);
- 	PCMSK0 |= (1<<PCINT5);
-	ma.setpid(1,0,6);//(0,0,0);//(2.6,0,3);
-	mb.setpid(1,0,6);//(0,0,0);//(2.2,0,4);
-	mc.setpid(1.45,0,2);//(0,0,0);//(1.9,0,6);
-	md.setpid(1,0,3);//(0,0,0);//(1.95,0,6);
+ 	PCMSK0 |= (1<<PCINT4);
 	
-	initUART0();
+	//initUART0();
 	initUART2();
-	initUART3();
+	//initUART3();
 
 	sei();
-
+	
+	ma.setpid(1.25,0.004,6.5);//(1.48,0,0.50);//(0.75,0,0.1);//(0,0,0);//(2.6,0,3); 1,0,6
+	mb.setpid(1.30,0.003,6.5);//(1.53,0,0.50);//(0.8,0,0.1);//(0,0,0);//(2.2,0,4); 1,0,6
+	mc.setpid(1.25,0.004,6.0);//(1.33,0,0.70);//(0.74,0,0.1);//(0,0,0);//(1.9,0,6); 1.45,0,2
+	md.setpid(1.10,0.003,5.5);//(1.33,0,0.70);//(0.75,0,0.1);//(0,0,0);//(1.95,0,6);	1,0,3
 	
 	while (1)
-	{
-		 		//data = UART3Receive();
-		//
-		 		//if(data == 'p'){
-		 			//ma.incrKP();
-		 			//doall();
-		 		//}
-		 		//else if(data == 'o'){
-		 			//mb.incrKP();
-		 			//doall();
-		//
-		 		//}
-		 		//else if(data == 'i'){
-		//
-		 			//mc.incrKP();
-		 			//doall();
-		 		//}
-		 		//else if(data == 'u'){
-		 			//md.incrKP();
-		 			//doall();
-		 		//}
-		 		//else if(data == 'l'){
-		 			//ma.dcrKP();
-		 			//doall();
-		 		//}
-		 		//else if(data == 'k'){
-		 			//mb.dcrKP();
-		 			//doall();
-		 		//}
-		 		//else if(data == 'j'){
-		 			//mc.dcrKP();
-		 			//doall();
-		 		//}
-		 		//else if(data == 'h'){md.dcrKP();doall();}
-		//
-		 		//else if(data == 'q'){ma.incrKD();doall();}
-		 		//else if(data == 'w'){mb.incrKD();doall();}
-		 		//else if(data == 'e'){mc.incrKD();doall();}
-		 		//else if(data == 'r'){md.incrKD();doall();}
-		//
-		 		//else if(data == 'a'){ma.dcrKD();doall();}
-		 		//else if(data == 's'){mb.dcrKD();doall();}
-		 		//else if(data == 'd'){mc.dcrKD();doall();}
-		 		//else if(data == 'f'){md.dcrKD();doall();}
-		//
-		 		//else if(data == 'z'){ma.incrKI();doall();}
-		 		//else if(data == 'x'){mb.incrKI();doall();}
-		 		//else if(data == 'c'){mc.incrKI();doall();}
-		 		//else if(data == 'v'){md.incrKI();doall();}
-		//
-		 		//else if(data == ','){ma.dcrKI();doall();}
-		 		//else if(data == '/'){mb.dcrKI();doall();}
-		 		//else if(data == ' '){mc.dcrKI();doall();}
-		 		//else if(data == '.'){md.dcrKI();doall();}
-		//
-		 		////////////////////////////////////////////////////////////////////
-		//
-		 		///////////To see graph of response////////////////////////////////
-		//
-		 		//UART0TransmitData(e1.getspeed());
-		 		//UART0TransmitString("\t");
-		 		//UART0TransmitData(e2.getspeed());
-		 		//UART0TransmitString("\t");
-		 		//UART0TransmitData(e3.getspeed());
-		 		//UART0TransmitString("\t");
-		 		//UART0TransmitData(e4.getspeed());
-		 		//UART0TransmitString("\t");
-		 		//UART0TransmitData(rcvdata[3]);
-		 		//UART0TransmitString("\t");
-		 		//UART0TransmitData(-rcvdata[3]);
-		 		//UART0TransmitString("\r\n");
-		//
-		 		//////////////////////////////////////////////////////////////////
-//
-		//
-		computePid();	
+ 	{
+ 		//UART0TransmitData(rcvdata[0]);
+ 		//UART0TransmitString("  ");
+ 		//UART0TransmitData(e1.getspeed());
+ 		//UART0TransmitString("\t");
+ 		//UART0TransmitData(rcvdata[1]);
+ 		//UART0TransmitString("  ");
+ 		//UART0TransmitData(e2.getspeed());
+ 		//UART0TransmitString("\t");
+ 		//UART0TransmitData(rcvdata[2]);
+ 		//UART0TransmitString("  ");
+ 		//UART0TransmitData(e3.getspeed());
+ 		//UART0TransmitString("\t");
+ 		//UART0TransmitData(rcvdata[3]);
+ 		//UART0TransmitString("  ");
+ 		//UART0TransmitData(e4.getspeed());
+ 		//UART0TransmitString("\r\n");
+		computePid();
 	}
 }
  ISR(PCINT0_vect)

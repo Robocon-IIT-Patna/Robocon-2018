@@ -52,6 +52,21 @@ struct pid
 
 pid ma,mb,mc,md;
 
+void Set_Pid_Movx(void)
+{
+	ma.setpid(1,0,6);//(0,0,0);//(2.6,0,3);
+	mb.setpid(1,0,6);//(0,0,0);//(2.2,0,4);
+	mc.setpid(1.45,0,2);//(0,0,0);//(1.9,0,6);
+	md.setpid(1,0,3);//(0,0,0);//(1.95,0,6);
+}
+
+void Set_Pid_Movy(void)
+{
+	ma.setpid(0.7,0,1);//(0,0,0);//(2.6,0,3);
+	mb.setpid(0.81,0,1);//(0,0,0);//(2.2,0,4);
+	mc.setpid(0.77,0,1);//(0,0,0);//(1.9,0,6);
+	md.setpid(0.91,0,1);//(0,0,0);//(1.95,0,6);
+}
 
 
 void setTuningsM1(int8_t SETPOINT1)
@@ -145,18 +160,25 @@ void setTuningsM4(int8_t SETPOINT4)
 
 void computePid()
 {
+	//if ((rcvdata[1] > 0 && rcvdata[2] > 0) || (rcvdata[1] < 0 && rcvdata[2] < 0) )
+	//{
+		//Set_Pid_Movy();
+	//}
+	//else
+	//{
+		//Set_Pid_Movx();
+	//}
 	
 	if(MotorPidFlag){
 		if(PidUpdateFlagMotor){
-			setTuningsM1(rcvdata[0]);
-			setTuningsM2(rcvdata[1]);
-			setTuningsM3(rcvdata[2]);
-			setTuningsM4(rcvdata[3]);
+				setTuningsM1(rcvdata[0]);
+				setTuningsM2(rcvdata[1]);
+				setTuningsM3(rcvdata[2]);
+				setTuningsM4(rcvdata[3]);
 			PidUpdateFlagMotor = false;
 		}
 	}
 	else{
-		/////////this line below has to be edited/////////////
 		m1.SetOcrValue(rcvdata[0] * 5.4);
 		m2.SetOcrValue(rcvdata[1] * 5.4);
 		m3.SetOcrValue(rcvdata[2] * 5.4);
@@ -173,10 +195,12 @@ void stopDrive(){
 	ma.Iterm = mb.Iterm = mc.Iterm = md.Iterm = 0;
 	ma.output = mb.output = mc.output = md.output = 0;
 	ma.MOTOR_OCR_VALUE = mb.MOTOR_OCR_VALUE = mc.MOTOR_OCR_VALUE = md.MOTOR_OCR_VALUE = 0;
+	//clear all the rcvdata below
 	rcvdata[0] = 0;
 	rcvdata[1] = 0;
 	rcvdata[2] = 0;
 	rcvdata[3] = 0;
+	//clear all the offset below
 }
 
 

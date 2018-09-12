@@ -78,15 +78,16 @@ ISR(INT3_vect)	//for motor4
 
 ISR(TIMER0_OVF_vect)
 {
-	datacount++;
-	
-		PidUpdateFlagMotor = true;
-		
- 	if(datacount == 2){
+	//datacount++;
+	//
+		//
+		//
+ 	//if(datacount == 2){
+		 PidUpdateFlagMotor = true;
  		//getdata = true;
- 		datacount = 0;
- 	}
-	
+ 		//datacount = 0;
+ 	//}
+	//
 	e1.setspeed();
 	e2.setspeed();
 	e3.setspeed();

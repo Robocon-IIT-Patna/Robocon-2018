@@ -104,26 +104,26 @@ void Motor::StopMotor()
 	switch(num)
 	{
 		case 1:
-			CLEAR	(DD_F1);
-			CLEAR	(DD_B1);
+			SET	(DD_F1);
+			SET	(DD_B1);
 
 			PWM_OCR1 = 0;
 			break;
 		case 2:
-			CLEAR	(DD_F2);
-			CLEAR	(DD_B2);
+			SET	(DD_F2);
+			SET	(DD_B2);
 
 			PWM_OCR2 = 0;
 			break;
 		case 3:
-			CLEAR	(DD_F3);
-			CLEAR	(DD_B3);
+			SET	(DD_F3);
+			SET	(DD_B3);
 
 			PWM_OCR3 = 0;
 			break;
 		case 4:
-			CLEAR	(DD_F4);
-			CLEAR	(DD_B4);
+			SET	(DD_F4);
+			SET	(DD_B4);
 
 			PWM_OCR4 = 0;
 			break;

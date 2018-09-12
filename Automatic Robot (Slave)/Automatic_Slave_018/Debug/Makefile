@@ -78,9 +78,9 @@ Motor.d \
 TWI.d \
 uart.d
 
-OUTPUT_FILE_PATH +=Auomatic\ Robot\ (Slave).elf
+OUTPUT_FILE_PATH +=I2C\ Communication\ (Slave).elf
 
-OUTPUT_FILE_PATH_AS_ARGS +="Auomatic Robot (Slave).elf"
+OUTPUT_FILE_PATH_AS_ARGS +="I2C Communication (Slave).elf"
 
 ADDITIONAL_DEPENDENCIES:=
 
@@ -160,13 +160,13 @@ all: $(OUTPUT_FILE_PATH) $(ADDITIONAL_DEPENDENCIES)
 $(OUTPUT_FILE_PATH): $(OBJS) $(USER_OBJS) $(OUTPUT_FILE_DEP) $(LIB_DEP) $(LINKER_SCRIPT_DEP)
 	@echo Building target: $@
 	@echo Invoking: AVR8/GNU Linker : 5.4.0
-	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-g++.exe$(QUOTE) -o$(OUTPUT_FILE_PATH_AS_ARGS) $(OBJS_AS_ARGS) $(USER_OBJS) $(LIBS) -Wl,-Map="Auomatic Robot (Slave).map" -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mrelax -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\ATmega_DFP\1.2.203\gcc\dev\atmega2560"  
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-g++.exe$(QUOTE) -o$(OUTPUT_FILE_PATH_AS_ARGS) $(OBJS_AS_ARGS) $(USER_OBJS) $(LIBS) -Wl,-Map="I2C Communication (Slave).map" -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mrelax -mmcu=atmega2560 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\ATmega_DFP\1.2.203\gcc\dev\atmega2560"  
 	@echo Finished building target: $@
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O ihex -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures  "Auomatic Robot (Slave).elf" "Auomatic Robot (Slave).hex"
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -j .eeprom  --set-section-flags=.eeprom=alloc,load --change-section-lma .eeprom=0  --no-change-warnings -O ihex "Auomatic Robot (Slave).elf" "Auomatic Robot (Slave).eep" || exit 0
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objdump.exe" -h -S "Auomatic Robot (Slave).elf" > "Auomatic Robot (Slave).lss"
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O srec -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures "Auomatic Robot (Slave).elf" "Auomatic Robot (Slave).srec"
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-size.exe" "Auomatic Robot (Slave).elf"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O ihex -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures  "I2C Communication (Slave).elf" "I2C Communication (Slave).hex"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -j .eeprom  --set-section-flags=.eeprom=alloc,load --change-section-lma .eeprom=0  --no-change-warnings -O ihex "I2C Communication (Slave).elf" "I2C Communication (Slave).eep" || exit 0
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objdump.exe" -h -S "I2C Communication (Slave).elf" > "I2C Communication (Slave).lss"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O srec -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures "I2C Communication (Slave).elf" "I2C Communication (Slave).srec"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-size.exe" "I2C Communication (Slave).elf"
 	
 	
 
@@ -178,5 +178,5 @@ $(OUTPUT_FILE_PATH): $(OBJS) $(USER_OBJS) $(OUTPUT_FILE_DEP) $(LIB_DEP) $(LINKER
 clean:
 	-$(RM) $(OBJS_AS_ARGS) $(EXECUTABLES)  
 	-$(RM) $(C_DEPS_AS_ARGS)   
-	rm -rf "Auomatic Robot (Slave).elf" "Auomatic Robot (Slave).a" "Auomatic Robot (Slave).hex" "Auomatic Robot (Slave).lss" "Auomatic Robot (Slave).eep" "Auomatic Robot (Slave).map" "Auomatic Robot (Slave).srec" "Auomatic Robot (Slave).usersignatures"
+	rm -rf "I2C Communication (Slave).elf" "I2C Communication (Slave).a" "I2C Communication (Slave).hex" "I2C Communication (Slave).lss" "I2C Communication (Slave).eep" "I2C Communication (Slave).map" "I2C Communication (Slave).srec" "I2C Communication (Slave).usersignatures"
 	
