@@ -1,0 +1,12 @@
+/*****29th July******/
+1. Hold Position Compass Tune
+	(P,I,D) => (6.6,0.02,10)
+2. Move Y Dual Differential Linetracker Tune
+	(P,I,D) => (1.0,0.02,12)
+3. Move X Inverse Kinematics Compass Tune
+        (P,I,D) => (6.6,0.02,10)
+4. Hold Positioon Dual Differential Linetrackers Tune
+	(P,I,D) => (1.8,0.02,6)
+5. Move Y Slow
+	(P,I,D) => (0.6,0.02,10)
+
